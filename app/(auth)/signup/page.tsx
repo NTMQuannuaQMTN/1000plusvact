@@ -1,6 +1,6 @@
 "use client";
 
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
@@ -15,29 +15,15 @@ export default function SignupPage() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
 
-    const { data, error: authError } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
     });
 
-    if (authError) {
-      setError(authError.message);
-      setLoading(false);
-      return;
-    }
-
-    // 🔥 IMPORTANT:
-    // profile is auto-created by DB trigger
-    // so we ONLY redirect
-
-    if (data.user) {
+    if (!error && data.user) {
       router.replace("/dashboard");
     }
-
-    setLoading(false);
   };
 
   return (
@@ -49,7 +35,7 @@ export default function SignupPage() {
 
       <form onSubmit={handleSignup} className="mt-6 space-y-3">
         <input
-          className="w-full p-3 border rounded-lg"
+          className="w-full p-3 border rounded-lg text-gray-700"
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -57,7 +43,7 @@ export default function SignupPage() {
 
         <input
           type="password"
-          className="w-full p-3 border rounded-lg"
+          className="w-full p-3 border rounded-lg text-gray-700"
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}

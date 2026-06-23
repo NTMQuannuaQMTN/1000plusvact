@@ -1,4 +1,4 @@
-import { getProfile } from "@/lib/auth/getProfile";
+import { getProfile } from "@/lib/profile";
 import { redirect } from "next/navigation";
 
 export default async function Admin() {
