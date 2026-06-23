@@ -1,26 +1,193 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --navy: #1B3480;
+  --navy-dark: #142868;
+  --navy-light: #234199;
+  --blue: #29ABE2;
+  --blue-dark: #1e8fc0;
+  --blue-light: #e8f6fd;
+  --white: #ffffff;
+  --bg: #f4f7fc;
+  --text: #21293c;
+  --text-muted: #6b7a95;
+  --border: #dde3ef;
+  --card-shadow: 0 2px 8px rgba(27,52,128,0.08);
+  --card-shadow-hover: 0 6px 24px rgba(27,52,128,0.14);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans, 'Inter', system-ui, -apple-system, sans-serif);
+  background: var(--white);
+  color: var(--text);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* Btn utilities */
+.btn-primary {
+  background: var(--blue);
+  color: var(--white);
+  padding: 12px 28px;
+  border-radius: 6px;
+  border: 2px solid var(--blue);
+  font-weight: 600;
+  font-size: 15px;
+  transition: background 0.15s, transform 0.1s;
+  display: inline-block;
+}
+.btn-primary:hover {
+  background: var(--blue-dark);
+  border-color: var(--blue-dark);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--white);
+  padding: 12px 28px;
+  border-radius: 6px;
+  border: 2px solid rgba(255,255,255,0.6);
+  font-weight: 600;
+  font-size: 15px;
+  transition: border-color 0.15s, background 0.15s;
+  display: inline-block;
+}
+.btn-outline:hover {
+  border-color: var(--white);
+  background: rgba(255,255,255,0.1);
+}
+
+.btn-outline-navy {
+  background: transparent;
+  color: var(--navy);
+  padding: 12px 28px;
+  border-radius: 6px;
+  border: 2px solid var(--navy);
+  font-weight: 600;
+  font-size: 15px;
+  transition: background 0.15s, color 0.15s;
+  display: inline-block;
+}
+.btn-outline-navy:hover {
+  background: var(--navy);
+  color: var(--white);
+}
+
+.nav-link {
+  color: rgba(255,255,255,0.8);
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: color 0.15s, background 0.15s;
+  text-decoration: none;
+}
+.nav-link:hover {
+  color: #fff;
+  background: rgba(255,255,255,0.1);
+}
+
+.subject-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  cursor: pointer;
+  transition: box-shadow 0.2s, transform 0.15s, border-color 0.2s;
+  text-decoration: none;
+  display: block;
+}
+.subject-card:hover {
+  box-shadow: var(--card-shadow-hover);
+  border-color: var(--blue);
+  transform: translateY(-2px);
+}
+
+.stat-card {
+  text-align: center;
+  padding: 32px 24px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 15px;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--white);
+  transition: border-color 0.15s, box-shadow 0.15s;
+  outline: none;
+}
+.form-input:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(41,171,226,0.12);
+}
+
+.auth-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 40px;
+  box-shadow: var(--card-shadow);
+  width: 100%;
+  max-width: 420px;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+}
+.sidebar-link:hover {
+  background: var(--bg);
+  color: var(--navy);
+}
+.sidebar-link.active {
+  background: var(--blue-light);
+  color: var(--navy);
+  font-weight: 600;
+}
+
+.progress-bar-bg {
+  background: var(--border);
+  border-radius: 4px;
+  height: 8px;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: var(--blue);
+  transition: width 0.6s ease;
 }
