@@ -18,9 +18,8 @@ export function Navbar({ variant = 'landing', userName, userRole }: NavbarProps)
       gap: 32,
       boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
     }}>
-      {/* Logo */}
       <a href="/" style={{
-        color: 'var(--white)',
+        color: '#fff',
         fontWeight: 800,
         fontSize: 22,
         letterSpacing: '-0.5px',
@@ -32,7 +31,7 @@ export function Navbar({ variant = 'landing', userName, userRole }: NavbarProps)
       }}>
         <span style={{
           background: 'var(--blue)',
-          color: 'white',
+          color: '#fff',
           borderRadius: 6,
           padding: '2px 8px',
           fontSize: 18,
@@ -41,55 +40,37 @@ export function Navbar({ variant = 'landing', userName, userRole }: NavbarProps)
         VACT
       </a>
 
-      {/* Nav links */}
       <div style={{ display: 'flex', gap: 4, flex: 1 }}>
         {variant === 'landing' && (
           <>
-            <a href="#courses" className="nav-link">Courses</a>
-            <a href="#practice" className="nav-link">Practice</a>
-            <a href="#about" className="nav-link">About</a>
+            <a href="#courses"  className="nav-link">Khóa học</a>
+            <a href="#practice" className="nav-link">Luyện tập</a>
+            <a href="#about"    className="nav-link">Giới thiệu</a>
           </>
         )}
         {variant === 'app' && (
           <>
-            <a href="/dashboard" className="nav-link">Home</a>
-            <a href="#courses" className="nav-link">Courses</a>
-            <a href="#practice" className="nav-link">Practice</a>
+            <a href="/dashboard"          className="nav-link">Trang chủ</a>
+            <a href="/dashboard/courses"  className="nav-link">Khóa học</a>
+            <a href="/dashboard/practice" className="nav-link">Luyện tập</a>
           </>
         )}
       </div>
 
-      {/* Right side */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
         {variant === 'landing' && (
           <>
-            <a href="/login" className="btn-outline" style={{ fontSize: 14, padding: '8px 20px' }}>
-              Log in
-            </a>
-            <a href="/signup" className="btn-primary" style={{ fontSize: 14, padding: '8px 20px' }}>
-              Sign up
-            </a>
+            <a href="/login"  className="btn-outline"  style={{ fontSize: 14, padding: '8px 20px' }}>Đăng nhập</a>
+            <a href="/signup" className="btn-primary"  style={{ fontSize: 14, padding: '8px 20px' }}>Đăng ký</a>
           </>
         )}
         {variant === 'app' && userName && (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            color: 'var(--white)',
-            fontSize: 14,
-          }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#fff', fontSize: 14 }}>
             <div style={{
-              width: 34,
-              height: 34,
-              borderRadius: '50%',
+              width: 34, height: 34, borderRadius: '50%',
               background: 'var(--blue)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 700,
-              fontSize: 15,
-              flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontWeight: 700, fontSize: 15, flexShrink: 0,
             }}>
               {userName.charAt(0).toUpperCase()}
             </div>

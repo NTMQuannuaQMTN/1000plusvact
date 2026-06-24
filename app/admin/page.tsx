@@ -1,143 +1,79 @@
-import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { getProfile } from '@/lib/auth/getProfile'
-import { Navbar } from '@/components/Navbar'
-
-async function logout() {
-  'use server'
-  const { createClient } = await import('@/lib/supabase/server')
-  const supabase = await createClient()
-  await supabase.auth.signOut()
-  const { redirect } = await import('next/navigation')
-  redirect('/')
-}
+import { Users, BarChart2, BookOpen, FileText, PlusCircle, Download, ChevronRight, ClipboardList } from 'lucide-react'
 
 export default async function AdminPage() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) redirect('/')
+  const [
+    { count: questionCount },
+    { count: testCount },
+  ] = await Promise.all([
+    supabase.from('questions').select('*', { count: 'exact', head: true }),
+    supabase.from('tests').select('*', { count: 'exact', head: true }),
+  ])
 
-  const profile = await getProfile(user.id)
-  if (profile?.role !== 'admin') redirect('/dashboard')
+  const stats = [
+    { icon: BookOpen,  value: String(questionCount ?? 0), label: 'Câu hỏi trong CSDL', color: 'var(--navy)' },
+    { icon: FileText,  value: String(testCount ?? 0),     label: 'Đề thi',             color: '#d97706'     },
+    { icon: Users,     value: '—',                        label: 'Tổng học sinh',      color: 'var(--blue)' },
+    { icon: BarChart2, value: '—',                        label: 'Hoạt động tuần này', color: '#16a34a'     },
+  ]
 
-  const displayName = profile?.full_name ?? user.email ?? 'Admin'
+  const quickActions = [
+    { icon: PlusCircle,  label: 'Thêm câu hỏi',    href: '/admin/questions/new'    },
+    { icon: ClipboardList, label: 'Import từ PDF',  href: '/admin/questions/import' },
+    { icon: FileText,    label: 'Tạo đề thi',       href: '/admin/tests/new'        },
+    { icon: Download,    label: 'Xem ngân hàng câu hỏi', href: '/admin/questions'  },
+  ]
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
-      <Navbar variant="app" userName={displayName} userRole="admin" />
+    <div style={{ padding: '32px', maxWidth: 900, display: 'flex', flexDirection: 'column', gap: 24 }}>
 
-      <div style={{ display: 'flex', flex: 1, maxWidth: 1100, margin: '0 auto', width: '100%', padding: '32px 24px', gap: 28 }}>
+      {/* Header */}
+      <div style={{
+        background: 'linear-gradient(135deg, #0f1e4d 0%, var(--navy) 100%)',
+        borderRadius: 16, padding: '28px 32px',
+      }}>
+        <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: 13, marginBottom: 4 }}>Quản trị hệ thống</p>
+        <h1 style={{ color: '#fff', fontSize: 24, fontWeight: 800 }}>Tổng quan</h1>
+      </div>
 
-        {/* Sidebar */}
-        <aside style={{
-          width: 220,
-          flexShrink: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 4,
-        }}>
-          <a href="/admin" className="sidebar-link active">🏠 Overview</a>
-          <a href="#" className="sidebar-link">👥 Students</a>
-          <a href="#" className="sidebar-link">📚 Questions</a>
-          <a href="#" className="sidebar-link">📝 Exams</a>
-          <a href="#" className="sidebar-link">📊 Analytics</a>
-          <a href="#" className="sidebar-link">⚙️ Settings</a>
-
-          <div style={{ borderTop: '1px solid var(--border)', marginTop: 32, paddingTop: 24 }}>
-            <form action={logout}>
-              <button type="submit" className="sidebar-link" style={{ color: '#dc2626' }}>
-                🚪 Log out
-              </button>
-            </form>
-          </div>
-        </aside>
-
-        {/* Main content */}
-        <main style={{ flex: 1, minWidth: 0 }}>
-
-          {/* Header */}
-          <div style={{
-            background: 'linear-gradient(135deg, #0f1e4d 0%, var(--navy) 100%)',
-            borderRadius: 16,
-            padding: '32px 36px',
-            marginBottom: 28,
-          }}>
-            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, marginBottom: 6 }}>Admin dashboard</p>
-            <h1 style={{ color: 'white', fontSize: 24, fontWeight: 800, marginBottom: 4 }}>
-              {displayName}
-            </h1>
-            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>{user.email}</p>
-          </div>
-
-          {/* Platform stats */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-            gap: 16,
-            marginBottom: 28,
-          }}>
-            {[
-              { label: 'Total students',   value: '10,482', icon: '👥', color: 'var(--blue)' },
-              { label: 'Active this week', value: '3,241',  icon: '📈', color: '#16a34a' },
-              { label: 'Questions in DB',  value: '512',    icon: '📚', color: 'var(--navy)' },
-              { label: 'Exams taken',      value: '8,910',  icon: '📝', color: '#d97706' },
-            ].map(({ label, value, icon, color }) => (
-              <div key={label} style={{
-                background: 'var(--white)',
-                border: '1px solid var(--border)',
-                borderRadius: 12,
-                padding: '20px',
-                boxShadow: 'var(--card-shadow)',
-              }}>
-                <p style={{ fontSize: 22, marginBottom: 4 }}>{icon}</p>
-                <p style={{ fontSize: 24, fontWeight: 800, color, marginBottom: 4 }}>{value}</p>
-                <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>{label}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Quick actions */}
-          <div style={{
-            background: 'var(--white)',
-            border: '1px solid var(--border)',
-            borderRadius: 16,
-            padding: '24px',
+      {/* Stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
+        {stats.map(({ icon: Icon, value, label, color }) => (
+          <div key={label} style={{
+            background: '#fff', border: '1px solid var(--border)',
+            borderRadius: 12, padding: '18px 20px',
             boxShadow: 'var(--card-shadow)',
           }}>
-            <h2 style={{ fontWeight: 700, color: 'var(--navy)', fontSize: 17, marginBottom: 20 }}>
-              Quick actions
-            </h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 14 }}>
-              {[
-                { label: 'Add question',   icon: '➕' },
-                { label: 'Create exam',    icon: '📋' },
-                { label: 'View students',  icon: '👤' },
-                { label: 'Export reports', icon: '📤' },
-              ].map(({ label, icon }) => (
-                <button key={label} style={{
-                  background: 'var(--bg)',
-                  border: '1.5px solid var(--border)',
-                  borderRadius: 10,
-                  padding: '16px',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  fontFamily: 'inherit',
-                  fontSize: 14,
-                  fontWeight: 600,
-                  color: 'var(--navy)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  transition: 'border-color 0.15s',
-                }}>
-                  <span style={{ fontSize: 20 }}>{icon}</span>
-                  {label}
-                </button>
-              ))}
-            </div>
+            <Icon size={20} color={color} style={{ marginBottom: 10 }} />
+            <p style={{ fontSize: 24, fontWeight: 800, color, marginBottom: 2 }}>{value}</p>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>{label}</p>
           </div>
-        </main>
+        ))}
+      </div>
+
+      {/* Quick actions */}
+      <div style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 14, padding: '24px', boxShadow: 'var(--card-shadow)' }}>
+        <h2 style={{ fontSize: 15, fontWeight: 700, color: 'var(--navy)', marginBottom: 18 }}>Thao tác nhanh</h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+          {quickActions.map(({ icon: Icon, label, href }) => (
+            <a key={label} href={href} style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '14px 16px',
+              background: 'var(--bg)', border: '1.5px solid var(--border)',
+              borderRadius: 10, cursor: 'pointer',
+              fontSize: 13, fontWeight: 600,
+              color: 'var(--navy)', textDecoration: 'none',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Icon size={17} color="var(--blue)" />
+                {label}
+              </div>
+              <ChevronRight size={14} color="var(--text-muted)" />
+            </a>
+          ))}
+        </div>
       </div>
     </div>
   )
