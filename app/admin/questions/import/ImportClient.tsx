@@ -46,7 +46,6 @@ function ProgressBar({ ps, elapsed }: { ps: ProgressState; elapsed: number }) {
       borderRadius: 12, padding: '20px 22px',
       boxShadow: 'var(--card-shadow)',
     }}>
-      {/* Phase + timer row */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {ps.phase !== 'done' && ps.phase !== 'error' && (
@@ -58,9 +57,7 @@ function ProgressBar({ ps, elapsed }: { ps: ProgressState; elapsed: number }) {
         </div>
         <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
           {ps.partialCount > 0 && ps.phase !== 'done' && (
-            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-              ~{ps.partialCount} câu hỏi
-            </span>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>~{ps.partialCount} câu hỏi</span>
           )}
           <span style={{ fontSize: 12, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
             {elapsed}s{remaining !== null ? ` / ~${ps.estimatedSeconds}s` : ''}
@@ -68,31 +65,22 @@ function ProgressBar({ ps, elapsed }: { ps: ProgressState; elapsed: number }) {
         </div>
       </div>
 
-      {/* Bar track */}
       <div style={{ background: '#e5e7eb', borderRadius: 999, height: 8, overflow: 'hidden' }}>
         <div style={{
-          height: '100%',
-          width: `${ps.progress}%`,
-          background: progressColor,
-          borderRadius: 999,
-          transition: 'width 0.6s ease, background 0.3s',
+          height: '100%', width: `${ps.progress}%`, background: progressColor,
+          borderRadius: 999, transition: 'width 0.6s ease, background 0.3s',
         }} />
       </div>
 
-      {/* Detail row */}
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
         <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
           {ps.phase === 'extracting' && ps.partialCount > 0
             ? `Đã tìm thấy ${ps.partialCount} câu hỏi...`
-            : ps.phase === 'done'
-            ? `Hoàn thành — ${ps.partialCount} câu hỏi`
-            : ps.phase === 'error'
-            ? ps.error
+            : ps.phase === 'done' ? `Hoàn thành — ${ps.partialCount} câu hỏi`
+            : ps.phase === 'error' ? ps.error
             : 'Vui lòng không đóng trang này'}
         </span>
-        <span style={{ fontSize: 12, fontWeight: 600, color: progressColor }}>
-          {ps.progress}%
-        </span>
+        <span style={{ fontSize: 12, fontWeight: 600, color: progressColor }}>{ps.progress}%</span>
       </div>
 
       {remaining !== null && remaining > 0 && (
@@ -127,13 +115,19 @@ export function ImportClient() {
 
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [saving, setSaving] = useState(false)
+
+  // keyed by image_group index — shared across questions with the same table/figure
   const [imageUrls, setImageUrls] = useState<Record<number, string>>({})
   const [imageUploading, setImageUploading] = useState<Record<number, boolean>>({})
+
+  // one hidden file input per question card (index i), but upload stores by image_group
   const fileInputRefs = useRef<Record<number, HTMLInputElement | null>>({})
+
+  // per-question answer + explanation overrides
+  const [overrides, setOverrides] = useState<Record<number, { answer: string; explanation: string }>>({})
 
   const modules = PARTS[part as keyof typeof PARTS]?.modules ?? {}
 
-  // Elapsed timer
   useEffect(() => {
     if (ps.phase !== 'idle' && ps.phase !== 'done' && ps.phase !== 'error') {
       timerRef.current = setInterval(() => setElapsed(e => e + 1), 1000)
@@ -161,14 +155,13 @@ export function ImportClient() {
     setResult(null)
     setSelected(new Set())
     setElapsed(0)
+    setImageUrls({})
+    setImageUploading({})
+    setOverrides({})
     setPs({ phase: 'reading', progress: 5, partialCount: 0, estimatedSeconds: 0, error: null })
 
     try {
-      const response = await fetch('/admin/questions/import/extract', {
-        method: 'POST',
-        body: formData,
-      })
-
+      const response = await fetch('/admin/questions/import/extract', { method: 'POST', body: formData })
       if (!response.body) throw new Error('No response body')
 
       const reader = response.body.getReader()
@@ -193,19 +186,12 @@ export function ImportClient() {
           }
 
           if (event.phase === 'done') {
-            setPs(prev => ({
-              ...prev,
-              phase: 'done',
-              progress: 100,
-              partialCount: event.questions.length,
-            }))
+            const qs: ExtractedQuestion[] = event.questions
+            setPs(prev => ({ ...prev, phase: 'done', progress: 100, partialCount: qs.length }))
             const testTitle = formData.get('test_title') as string | null
-            setResult({
-              questions: event.questions,
-              mode,
-              ...(mode === 'part' ? { part, module } : { testTitle: testTitle ?? '' }),
-            })
-            setSelected(new Set(event.questions.map((_: unknown, i: number) => i)))
+            setResult({ questions: qs, mode, ...(mode === 'part' ? { part, module } : { testTitle: testTitle ?? '' }) })
+            setSelected(new Set(qs.map((_, i) => i)))
+            setOverrides(Object.fromEntries(qs.map((q, i) => [i, { answer: q.answer, explanation: q.explanation ?? '' }])))
             return
           }
 
@@ -219,19 +205,13 @@ export function ImportClient() {
         }
       }
     } catch (err) {
-      setPs(prev => ({
-        ...prev,
-        phase: 'error',
-        error: err instanceof Error ? err.message : 'Có lỗi không xác định.',
-      }))
+      setPs(prev => ({ ...prev, phase: 'error', error: err instanceof Error ? err.message : 'Có lỗi không xác định.' }))
     }
   }
 
   const toggleAll = () => {
     if (!result) return
-    setSelected(selected.size === result.questions.length
-      ? new Set()
-      : new Set(result.questions.map((_, i) => i)))
+    setSelected(selected.size === result.questions.length ? new Set() : new Set(result.questions.map((_, i) => i)))
   }
 
   const toggle = (i: number) => {
@@ -240,33 +220,44 @@ export function ImportClient() {
     setSelected(next)
   }
 
-  const uploadImage = async (index: number, file: File) => {
-    setImageUploading(prev => ({ ...prev, [index]: true }))
+  const uploadImage = async (imageGroup: number, questionIdx: number, file: File) => {
+    setImageUploading(prev => ({ ...prev, [imageGroup]: true }))
     try {
       const supabase = createClient()
       const ext = file.name.split('.').pop() ?? 'png'
-      const path = `import-${Date.now()}-${index}.${ext}`
+      const path = `import-${Date.now()}-g${imageGroup}.${ext}`
       const { error } = await supabase.storage.from('question-images').upload(path, file, { upsert: true })
       if (error) throw error
       const { data } = supabase.storage.from('question-images').getPublicUrl(path)
-      setImageUrls(prev => ({ ...prev, [index]: data.publicUrl }))
+      setImageUrls(prev => ({ ...prev, [imageGroup]: data.publicUrl }))
     } finally {
-      setImageUploading(prev => ({ ...prev, [index]: false }))
+      setImageUploading(prev => ({ ...prev, [imageGroup]: false }))
     }
+    void questionIdx // suppress unused-var
+  }
+
+  const setOverride = (i: number, field: 'answer' | 'explanation', value: string) => {
+    setOverrides(prev => ({ ...prev, [i]: { ...prev[i], [field]: value } }))
   }
 
   const handleSave = async () => {
     if (!result || selected.size === 0) return
     setSaving(true)
-    const questionsWithImages = result.questions.map((q, i) =>
-      imageUrls[i] ? { ...q, image_url: imageUrls[i] } : q
-    )
+    const questionsWithEdits = result.questions.map((q, i) => {
+      const ig = q.image_group ?? null
+      return {
+        ...q,
+        answer: overrides[i]?.answer ?? q.answer,
+        explanation: overrides[i]?.explanation || q.explanation,
+        image_url: ig !== null && imageUrls[ig] ? imageUrls[ig] : undefined,
+      }
+    })
     const fd = new FormData()
     fd.set('mode', result.mode)
     if (result.part) fd.set('part', result.part)
     if (result.module) fd.set('module', result.module)
     if (result.testTitle) fd.set('test_title', result.testTitle)
-    fd.set('questions', JSON.stringify(questionsWithImages))
+    fd.set('questions', JSON.stringify(questionsWithEdits))
     selected.forEach(i => fd.append('selected', String(i)))
     await saveImportedQuestions(fd)
     setSaving(false)
@@ -338,8 +329,7 @@ export function ImportClient() {
             width: 'fit-content', opacity: isProcessing ? 0.5 : 1,
             cursor: isProcessing ? 'not-allowed' : 'pointer',
           }}>
-            <Upload size={16} />
-            Trích xuất câu hỏi
+            <Upload size={16} /> Trích xuất câu hỏi
           </button>
         </form>
       </div>
@@ -352,9 +342,7 @@ export function ImportClient() {
         <div style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 14, padding: '28px', boxShadow: 'var(--card-shadow)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
             <div>
-              <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--navy)', marginBottom: 2 }}>
-                2. Xem lại và lưu
-              </h2>
+              <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--navy)', marginBottom: 2 }}>2. Xem lại và lưu</h2>
               <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
                 {result.questions.length} câu hỏi — Đã chọn {selected.size}.
                 {result.mode === 'full' && ` Sẽ tạo đề thi "${result.testTitle}".`}
@@ -383,115 +371,147 @@ export function ImportClient() {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {result.questions.map((q, i) => (
-              <div key={i} onClick={() => toggle(i)} style={{
-                border: `1.5px solid ${selected.has(i) ? 'var(--blue)' : 'var(--border)'}`,
-                borderRadius: 10, padding: '16px 18px',
-                background: selected.has(i) ? 'var(--blue-light)' : 'var(--bg)',
-                cursor: 'pointer', transition: 'border-color 0.12s, background 0.12s',
-              }}>
-                <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                  <div style={{ flexShrink: 0, marginTop: 1 }}>
-                    {selected.has(i) ? <CheckSquare size={18} color="var(--blue)" /> : <Square size={18} color="var(--text-muted)" />}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    {/* Meta */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>Câu {i + 1}</span>
-                      {result.mode === 'full' && q.part && (
-                        <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 999, background: 'var(--blue-light)', color: 'var(--navy)' }}>
-                          {getPartLabel(q.part)} · {getModuleLabel(q.part, q.module ?? '')}
-                        </span>
-                      )}
-                      {q.answer && (
-                        <span style={{ fontSize: 11, fontWeight: 700, padding: '1px 7px', borderRadius: 4, background: '#dcfce7', color: '#16a34a' }}>
-                          ĐA: {q.answer}
-                        </span>
-                      )}
-                      {q.image_description && !imageUrls[i] && (
-                        <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 999, background: '#fef3c7', color: '#92400e', display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <ImageIcon size={11} /> Có hình vẽ
-                        </span>
-                      )}
+            {result.questions.map((q, i) => {
+              const ig = q.image_group ?? null
+              const hasImage = ig !== null
+              const uploadedUrl = hasImage ? (imageUrls[ig] ?? null) : null
+              const isUploading = hasImage ? (imageUploading[ig] ?? false) : false
+              const ov = overrides[i] ?? { answer: q.answer, explanation: q.explanation ?? '' }
+
+              return (
+                <div key={i} onClick={() => toggle(i)} style={{
+                  border: `1.5px solid ${selected.has(i) ? 'var(--blue)' : 'var(--border)'}`,
+                  borderRadius: 10, padding: '16px 18px',
+                  background: selected.has(i) ? 'var(--blue-light)' : 'var(--bg)',
+                  cursor: 'pointer', transition: 'border-color 0.12s, background 0.12s',
+                }}>
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                    <div style={{ flexShrink: 0, marginTop: 1 }}>
+                      {selected.has(i) ? <CheckSquare size={18} color="var(--blue)" /> : <Square size={18} color="var(--text-muted)" />}
                     </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
 
-                    {/* Passage */}
-                    {q.passage && (
-                      <div style={{
-                        fontSize: 13, color: 'var(--text)', lineHeight: 1.6,
-                        background: '#f8faff', border: '1px solid var(--border)',
-                        borderLeft: '3px solid var(--blue)',
-                        borderRadius: 6, padding: '10px 12px', marginBottom: 10, whiteSpace: 'pre-wrap',
-                      }}>
-                        {q.passage}
-                      </div>
-                    )}
-
-                    {/* Image */}
-                    {(q.image_description || imageUrls[i]) && (
-                      <div style={{
-                        background: '#fef3c7', border: '1px solid #fde68a',
-                        borderLeft: '3px solid #f59e0b', borderRadius: 6, padding: '10px 12px', marginBottom: 10,
-                      }} onClick={e => e.stopPropagation()}>
-                        {imageUrls[i] ? (
-                          <div>
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={imageUrls[i]} alt="Hình vẽ" style={{ maxWidth: '100%', maxHeight: 240, borderRadius: 6, display: 'block', marginBottom: 8 }} />
-                            <button onClick={() => fileInputRefs.current[i]?.click()} style={{ fontSize: 11, color: '#92400e', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'inherit' }}>
-                              Đổi ảnh
-                            </button>
-                          </div>
-                        ) : (
-                          <>
-                            <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginBottom: 8 }}>
-                              <ImageIcon size={14} color="#92400e" style={{ flexShrink: 0, marginTop: 1 }} />
-                              <span style={{ fontSize: 12, color: '#92400e', lineHeight: 1.5 }}>
-                                <strong>Mô tả hình:</strong> {q.image_description}
-                              </span>
-                            </div>
-                            <button disabled={imageUploading[i]} onClick={() => fileInputRefs.current[i]?.click()} style={{
-                              display: 'flex', alignItems: 'center', gap: 5,
-                              padding: '5px 12px', borderRadius: 6, cursor: 'pointer',
-                              background: '#f59e0b', border: 'none', color: '#fff',
-                              fontSize: 12, fontWeight: 600, fontFamily: 'inherit',
-                            }}>
-                              {imageUploading[i]
-                                ? <><Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> Đang upload...</>
-                                : <><Upload size={12} /> Upload ảnh thật</>}
-                            </button>
-                          </>
+                      {/* Meta row */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>Câu {i + 1}</span>
+                        {result.mode === 'full' && q.part && (
+                          <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 999, background: 'var(--blue-light)', color: 'var(--navy)' }}>
+                            {getPartLabel(q.part)} · {getModuleLabel(q.part, q.module ?? '')}
+                          </span>
                         )}
-                        <input type="file" accept="image/*" style={{ display: 'none' }}
-                          ref={el => { fileInputRefs.current[i] = el }}
-                          onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage(i, f) }}
-                        />
+                        {hasImage && !uploadedUrl && (
+                          <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 999, background: '#fef3c7', color: '#92400e', display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <ImageIcon size={11} /> Có hình ảnh/bảng
+                          </span>
+                        )}
+                        {uploadedUrl && (
+                          <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 999, background: '#dcfce7', color: '#16a34a', display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <ImageIcon size={11} /> Đã upload ảnh
+                          </span>
+                        )}
                       </div>
-                    )}
 
-                    {/* Question */}
-                    <p style={{ fontSize: 14, color: 'var(--navy)', fontWeight: 500, marginBottom: 10, lineHeight: 1.5 }}>{q.content}</p>
-
-                    {/* Options */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-                      {OPTIONS.map(letter => (
-                        <div key={letter} style={{
-                          display: 'flex', gap: 7, alignItems: 'flex-start', fontSize: 13,
-                          color: q.answer === letter ? '#16a34a' : 'var(--text)',
-                          fontWeight: q.answer === letter ? 600 : 400,
+                      {/* Passage */}
+                      {q.passage && (
+                        <div style={{
+                          fontSize: 13, color: 'var(--text)', lineHeight: 1.6,
+                          background: '#f8faff', border: '1px solid var(--border)',
+                          borderLeft: '3px solid var(--blue)',
+                          borderRadius: 6, padding: '10px 12px', marginBottom: 10, whiteSpace: 'pre-wrap',
                         }}>
-                          <span style={{ fontWeight: 700, flexShrink: 0 }}>{letter}.</span>
-                          <span>{q[`option_${letter.toLowerCase()}` as keyof ExtractedQuestion] as string}</span>
+                          {q.passage}
                         </div>
-                      ))}
-                    </div>
+                      )}
 
-                    {q.explanation && (
-                      <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 10, fontStyle: 'italic' }}>💡 {q.explanation}</p>
-                    )}
+                      {/* Image upload — shared by all questions with same image_group */}
+                      {hasImage && (
+                        <div style={{
+                          background: '#fef3c7', border: '1px solid #fde68a',
+                          borderLeft: '3px solid #f59e0b', borderRadius: 6, padding: '10px 12px', marginBottom: 10,
+                        }} onClick={e => e.stopPropagation()}>
+                          {uploadedUrl ? (
+                            <div>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={uploadedUrl} alt="Hình ảnh / bảng" style={{ maxWidth: '100%', maxHeight: 280, borderRadius: 6, display: 'block', marginBottom: 8 }} />
+                              <button onClick={() => fileInputRefs.current[i]?.click()} style={{ fontSize: 11, color: '#92400e', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'inherit' }}>
+                                Đổi ảnh
+                              </button>
+                            </div>
+                          ) : (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                              <ImageIcon size={16} color="#92400e" style={{ flexShrink: 0 }} />
+                              <span style={{ fontSize: 12, color: '#92400e', flex: 1 }}>
+                                Câu hỏi này có hình ảnh hoặc bảng số liệu — upload ảnh chụp từ đề thi.
+                                {ig !== null && result.questions.filter(qq => (qq.image_group ?? null) === ig).length > 1 && (
+                                  <span style={{ fontWeight: 600 }}> (dùng chung với các câu khác)</span>
+                                )}
+                              </span>
+                              <button disabled={isUploading} onClick={() => fileInputRefs.current[i]?.click()} style={{
+                                display: 'flex', alignItems: 'center', gap: 5,
+                                padding: '5px 12px', borderRadius: 6, cursor: isUploading ? 'not-allowed' : 'pointer',
+                                background: '#f59e0b', border: 'none', color: '#fff',
+                                fontSize: 12, fontWeight: 600, fontFamily: 'inherit', flexShrink: 0,
+                              }}>
+                                {isUploading
+                                  ? <><Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> Đang upload...</>
+                                  : <><Upload size={12} /> Upload ảnh</>}
+                              </button>
+                            </div>
+                          )}
+                          <input type="file" accept="image/*" style={{ display: 'none' }}
+                            ref={el => { fileInputRefs.current[i] = el }}
+                            onChange={e => { const f = e.target.files?.[0]; if (f && ig !== null) uploadImage(ig, i, f) }}
+                          />
+                        </div>
+                      )}
+
+                      {/* Question */}
+                      <p style={{ fontSize: 14, color: 'var(--navy)', fontWeight: 500, marginBottom: 10, lineHeight: 1.5 }}>{q.content}</p>
+
+                      {/* Options */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginBottom: 14 }}>
+                        {OPTIONS.map(letter => (
+                          <div key={letter} style={{
+                            display: 'flex', gap: 7, alignItems: 'flex-start', fontSize: 13,
+                            color: ov.answer === letter ? '#16a34a' : 'var(--text)',
+                            fontWeight: ov.answer === letter ? 600 : 400,
+                          }}>
+                            <span style={{ fontWeight: 700, flexShrink: 0 }}>{letter}.</span>
+                            <span>{q[`option_${letter.toLowerCase()}` as keyof ExtractedQuestion] as string}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Editable answer */}
+                      <div onClick={e => e.stopPropagation()} style={{
+                        borderTop: '1px solid var(--border)', paddingTop: 12,
+                        display: 'flex', alignItems: 'center', gap: 10,
+                      }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', flexShrink: 0 }}>Đáp án:</span>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          {OPTIONS.map(letter => (
+                            <button key={letter} onClick={() => setOverride(i, 'answer', letter)} style={{
+                              width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer',
+                              fontSize: 13, fontWeight: 700, fontFamily: 'inherit',
+                              background: ov.answer === letter ? '#16a34a' : 'var(--bg)',
+                              color: ov.answer === letter ? '#fff' : 'var(--text)',
+                              outline: ov.answer === letter ? 'none' : '1.5px solid var(--border)',
+                              transition: 'background 0.12s, color 0.12s',
+                            }}>
+                              {letter}
+                            </button>
+                          ))}
+                          {ov.answer === '' && (
+                            <span style={{ fontSize: 11, color: '#dc2626', alignSelf: 'center', marginLeft: 4 }}>Chưa có đáp án</span>
+                          )}
+                        </div>
+                      </div>
+
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
 
           {result.questions.length > 5 && (

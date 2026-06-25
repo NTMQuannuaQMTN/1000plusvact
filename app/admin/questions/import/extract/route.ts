@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import { GoogleGenAI } from '@google/genai'
 import { PARTS } from '@/lib/exam/parts'
 
 // Allow up to 5 minutes on Vercel Pro / Fluid Compute
@@ -11,17 +11,17 @@ export const maxDuration = 300
 
 type CompactQuestion = {
   pi: number | null      // index into passages array; null = no passage
+  ii: number | null      // index into images array; null = no image/table
   part?: string          // full-exam mode only
   module?: string        // full-exam mode only
-  img: string | null     // image description
   q: string              // question content
   a: string; b: string; c: string; d: string
   ans: string            // "A"|"B"|"C"|"D"|""
-  exp: string | null     // explanation
 }
 
 type CompactResponse = {
   passages: string[]
+  images: string[]       // short labels e.g. "[bảng]" or "[hình vẽ]"; questions share by index
   questions: CompactQuestion[]
 }
 
@@ -29,11 +29,11 @@ type CompactResponse = {
 
 const SHARED_NOTES = `
 Lưu ý quan trọng:
-- Mỗi đoạn văn/ngữ liệu chỉ lưu MỘT lần vào mảng "passages"; các câu hỏi dùng chung đoạn đó thì đặt "pi" = index của đoạn đó.
-- "q" chỉ chứa câu hỏi, không lặp lại đoạn văn.
-- "img": mô tả chi tiết hình vẽ/sơ đồ nếu có; null nếu không có.
-- "ans": một trong "A","B","C","D"; đặt "" nếu không có đáp án.
-- "exp": giải thích hoặc null.
+- HOÀN CHỈNH: trích xuất ĐẦY ĐỦ mọi câu hỏi, không bỏ sót. Sau khi xong, kiểm tra lại số thứ tự câu hỏi để chắc chắn không có câu nào bị bỏ qua.
+- Đoạn văn/ngữ liệu: lưu MỘT lần vào "passages"; TẤT CẢ câu hỏi thuộc nhóm đó (câu đầu, câu giữa, câu cuối) đều đặt "pi" = index đó. Ví dụ: "Dựa vào đoạn sau trả lời câu 5 đến câu 8" → câu 5, 6, 7, 8 đều có pi = index đoạn văn đó, KHÔNG để pi = null.
+- "q" chỉ chứa câu hỏi, không lặp lại đoạn văn/ngữ liệu.
+- Bảng số liệu / hình vẽ / đồ thị / sơ đồ: thêm nhãn ngắn vào "images" (VD: "[bảng]", "[hình vẽ]") và đặt "ii" = index đó. Nhiều câu dùng chung → tất cả cùng "ii". KHÔNG tái tạo bảng/hình thành text. Câu không có hình/bảng: "ii": null.
+- "ans": một trong "A","B","C","D"; đặt "" nếu không có.
 - Giữ nguyên toàn bộ nội dung, không tóm tắt.
 - Chỉ trả về JSON object, không có text nào khác.`
 
@@ -46,8 +46,8 @@ const PART_DESCRIPTIONS = `
 
 function buildPrompt(mode: string, partLabel: string, moduleLabel: string): string {
   const schema = mode === 'full'
-    ? `{"passages":["đoạn văn 1","..."],"questions":[{"pi":0,"part":"toan","module":"hinh_hoc","img":null,"q":"...","a":"...","b":"...","c":"...","d":"...","ans":"A","exp":null}]}`
-    : `{"passages":["đoạn văn 1","..."],"questions":[{"pi":0,"img":null,"q":"...","a":"...","b":"...","c":"...","d":"...","ans":"A","exp":null}]}`
+    ? `{"passages":["đoạn văn 1","..."],"images":["[bảng]","[hình vẽ]"],"questions":[{"pi":null,"ii":0,"part":"toan","module":"hinh_hoc","q":"...","a":"...","b":"...","c":"...","d":"...","ans":"A"}]}`
+    : `{"passages":["đoạn văn 1","..."],"images":["[bảng]"],"questions":[{"pi":0,"ii":null,"q":"...","a":"...","b":"...","c":"...","d":"...","ans":"A"}]}`
 
   if (mode === 'full') {
     return `Đây là đề thi ĐGNL TPHCM đầy đủ.
@@ -80,14 +80,14 @@ function expandCompact(compact: CompactResponse, fixedPart?: string, fixedModule
     part:              q.part ?? fixedPart ?? '',
     module:            q.module ?? fixedModule ?? '',
     passage:           q.pi !== null && q.pi !== undefined ? (compact.passages[q.pi] ?? null) : null,
-    image_description: q.img ?? null,
+    image_description: q.ii !== null && q.ii !== undefined ? (compact.images?.[q.ii] ?? '[hình ảnh]') : null,
+    image_group:       q.ii ?? null,
     content:           q.q,
     option_a:          q.a,
     option_b:          q.b,
     option_c:          q.c,
     option_d:          q.d,
     answer:            q.ans ?? '',
-    explanation:       q.exp ?? null,
   }))
 }
 
@@ -135,19 +135,28 @@ export async function POST(request: NextRequest) {
         const moduleLabel = PARTS[part as keyof typeof PARTS]?.modules[module] ?? module
         const prompt = buildPrompt(mode, partLabel, moduleLabel)
 
-        const genAI = new GoogleGenerativeAI(apiKey)
-        // gemini-1.5-flash: free tier (1500 req/day), stable, confirmed PDF support
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+        const ai = new GoogleGenAI({ apiKey })
 
-        const result = await model.generateContentStream([
-          { inlineData: { data: base64, mimeType: 'application/pdf' } },
-          prompt,
-        ])
+        // Small thinking budget lets the model self-verify completeness (count questions, check
+        // all passages are linked) without the full cost/latency of uncapped reasoning.
+        const stream = await ai.models.generateContentStream({
+          model: 'gemini-2.5-flash',
+          contents: [{
+            parts: [
+              { inlineData: { data: base64, mimeType: 'application/pdf' } },
+              { text: prompt },
+            ],
+          }],
+          config: {
+            thinkingConfig: { thinkingBudget: 8192 },
+            maxOutputTokens: 65536,
+          },
+        })
 
         let fullText = ''
 
-        for await (const chunk of result.stream) {
-          fullText += chunk.text()
+        for await (const chunk of stream) {
+          fullText += chunk.text ?? ''
           const found = countPartialQuestions(fullText)
           const charProgress = Math.min(72, (fullText.length / 12000) * 72)
           send(ctrl, {
@@ -184,6 +193,7 @@ export async function POST(request: NextRequest) {
         send(ctrl, { phase: 'done', progress: 100, questions })
         ctrl.close()
       } catch (err) {
+        console.error('[PDF Extract]', err)
         const msg = (err instanceof Error ? err.message : String(err)).toLowerCase()
         let friendly: string
 

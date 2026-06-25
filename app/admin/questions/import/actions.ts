@@ -8,7 +8,8 @@ export type ExtractedQuestion = {
   part?: string
   module?: string
   passage: string | null
-  image_description: string | null
+  image_description: string | null  // "[bảng]" | "[hình vẽ]" | null — just a flag
+  image_group: number | null        // questions sharing the same table/figure share this index
   content: string
   option_a: string
   option_b: string

@@ -11,6 +11,12 @@ export async function deleteQuestion(formData: FormData) {
   revalidatePath('/admin/questions')
 }
 
+export async function updateAnswer(id: string, answer: string) {
+  const supabase = await createClient()
+  await supabase.from('questions').update({ answer }).eq('id', id)
+  revalidatePath('/admin/questions')
+}
+
 export async function saveQuestion(formData: FormData) {
   const id = formData.get('id') as string | null
   const supabase = await createClient()

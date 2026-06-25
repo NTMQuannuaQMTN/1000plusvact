@@ -3,6 +3,7 @@ import { PARTS, getPartLabel, getModuleLabel } from '@/lib/exam/parts'
 import { PlusCircle, Upload, Search, Pencil } from 'lucide-react'
 import { deleteQuestion } from './actions'
 import { DeleteButton } from '@/components/DeleteButton'
+import { AnswerSwitch } from './AnswerSwitch'
 
 type SearchParams = Promise<{ part?: string; module?: string; q?: string; page?: string }>
 
@@ -137,13 +138,7 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Se
                     </p>
                   </td>
                   <td style={{ padding: '12px 14px' }}>
-                    <span style={{
-                      fontSize: 12, fontWeight: 700,
-                      color: '#16a34a', background: '#dcfce7',
-                      padding: '2px 8px', borderRadius: 4,
-                    }}>
-                      {q.answer}
-                    </span>
+                    <AnswerSwitch id={q.id} answer={q.answer} />
                   </td>
                   <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
                     <div style={{ display: 'flex', gap: 6 }}>
