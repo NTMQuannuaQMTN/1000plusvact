@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
-import { PlusCircle, FileText, Pencil, Trash2 } from 'lucide-react'
+import { PlusCircle, FileText, Pencil } from 'lucide-react'
 import { deleteTest } from './actions'
+import { DeleteButton } from '@/components/DeleteButton'
 
 export default async function TestsPage() {
   const supabase = await createClient()
@@ -71,21 +72,7 @@ export default async function TestsPage() {
                   }}>
                     <Pencil size={12} /> Sửa
                   </a>
-                  <form action={deleteTest}>
-                    <input type="hidden" name="id" value={test.id} />
-                    <button type="submit" style={{
-                      display: 'flex', alignItems: 'center', gap: 4,
-                      padding: '6px 12px', borderRadius: 7,
-                      background: '#fff0f0', border: '1px solid #fca5a5',
-                      fontSize: 12, color: '#dc2626', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600,
-                    }}
-                      onClick={(e) => {
-                        if (!confirm('Xóa đề thi này?')) e.preventDefault()
-                      }}
-                    >
-                      <Trash2 size={12} /> Xóa
-                    </button>
-                  </form>
+                  <DeleteButton action={deleteTest} id={test.id} confirmMessage="Xóa đề thi này?" />
                 </div>
               </div>
             )

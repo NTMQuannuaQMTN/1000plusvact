@@ -92,6 +92,7 @@ ${SHARED_NOTES}`
     return { ok: true, questions, mode: 'part', part, module }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
+    console.log(err);
     return { ok: false, error: msg.includes('JSON') ? 'AI không thể trích xuất câu hỏi. Hãy thử file khác.' : msg }
   }
 }

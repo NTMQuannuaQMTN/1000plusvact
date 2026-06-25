@@ -1,7 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { PARTS, getPartLabel, getModuleLabel } from '@/lib/exam/parts'
-import { PlusCircle, Upload, Search, Pencil, Trash2 } from 'lucide-react'
+import { PlusCircle, Upload, Search, Pencil } from 'lucide-react'
 import { deleteQuestion } from './actions'
+import { DeleteButton } from '@/components/DeleteButton'
 
 type SearchParams = Promise<{ part?: string; module?: string; q?: string; page?: string }>
 
@@ -154,22 +155,7 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Se
                       }}>
                         <Pencil size={12} /> Sửa
                       </a>
-                      <form action={deleteQuestion}>
-                        <input type="hidden" name="id" value={q.id} />
-                        <button type="submit" style={{
-                          display: 'flex', alignItems: 'center', gap: 4,
-                          padding: '5px 10px', borderRadius: 6,
-                          background: '#fff0f0', border: '1px solid #fca5a5',
-                          fontSize: 12, color: '#dc2626', cursor: 'pointer',
-                          fontFamily: 'inherit',
-                        }}
-                          onClick={(e) => {
-                            if (!confirm('Xóa câu hỏi này?')) e.preventDefault()
-                          }}
-                        >
-                          <Trash2 size={12} /> Xóa
-                        </button>
-                      </form>
+                      <DeleteButton action={deleteQuestion} id={q.id} confirmMessage="Xóa câu hỏi này?" />
                     </div>
                   </td>
                 </tr>
