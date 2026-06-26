@@ -2,17 +2,18 @@ import { NextRequest } from 'next/server'
 import { GoogleGenAI } from '@google/genai'
 
 export async function POST(request: NextRequest) {
-  const { content, option_a, option_b, option_c, option_d, answer, passage } =
+  const { content, option_a, option_b, option_c, option_d, passage, studentAnswer, correctAnswer } =
     await request.json() as {
       content: string
       option_a: string; option_b: string; option_c: string; option_d: string
-      answer: string
       passage?: string | null
+      studentAnswer?: string | null
+      correctAnswer?: string | null
     }
 
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) return new Response('GEMINI_API_KEY not configured', { status: 500 })
-  if (!content || !answer) return new Response('Missing question or answer', { status: 400 })
+  if (!content) return new Response('Missing question', { status: 400 })
 
   const questionBlock = [
     passage ? `Ngữ liệu:\n${passage}\n` : null,
@@ -23,13 +24,23 @@ export async function POST(request: NextRequest) {
     `D. ${option_d}`,
   ].filter(Boolean).join('\n')
 
-  const prompt = `Bạn là một học sinh đã đạt điểm rất cao trong kỳ thi Đánh giá năng lực ĐHQG TP.HCM. Một bạn cùng lớp hỏi bạn tại sao đáp án ${answer} lại đúng trong câu hỏi dưới đây.
+  let situationLine: string
+  if (studentAnswer && correctAnswer) {
+    const isRight = studentAnswer === correctAnswer
+    situationLine = isRight
+      ? `Bạn cùng lớp đã chọn ${studentAnswer} và đúng rồi. Xác nhận ngắn gọn rồi giải thích tại sao ${studentAnswer} là đáp án đúng.`
+      : `Bạn cùng lớp đã chọn ${studentAnswer} nhưng đáp án đúng là ${correctAnswer}. Giải thích nhẹ nhàng tại sao ${studentAnswer} sai và tại sao ${correctAnswer} mới đúng.`
+  } else {
+    situationLine = `Bạn cùng lớp nhờ bạn giải câu hỏi dưới đây. Hãy tìm ra đáp án đúng (A, B, C hoặc D), nêu rõ, và giải thích lý do.`
+  }
 
-Hãy giải thích tự nhiên, ngắn gọn, dễ hiểu — như đang nói chuyện thật sự, không dùng markdown, không liệt kê bullet points. Chỉ viết bằng tiếng Việt.
+  const prompt = `Bạn là một học sinh đã đạt điểm rất cao trong kỳ thi Đánh giá năng lực ĐHQG TP.HCM (ĐGNL).
 
-${questionBlock}
+${situationLine}
 
-Đáp án đúng: ${answer}`
+Trả lời tự nhiên, ngắn gọn như nói chuyện với bạn cùng lớp. Viết bằng tiếng Việt, không dùng markdown hay bullet points.
+
+${questionBlock}`
 
   const ai = new GoogleGenAI({ apiKey })
 

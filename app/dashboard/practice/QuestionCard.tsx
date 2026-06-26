@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Sparkles, Loader2, ChevronDown, ChevronUp } from 'lucide-react'
+import { Sparkles, Loader2, ChevronDown, ChevronUp, Send } from 'lucide-react'
 
 type Question = {
   id: string
@@ -20,46 +20,81 @@ type Question = {
 const OPTIONS = ['A', 'B', 'C', 'D'] as const
 
 export function QuestionCard({ q, index }: { q: Question; index: number }) {
-  const [aiText, setAiText] = useState('')
-  const [loading, setLoading] = useState(false)
   const [open, setOpen] = useState(false)
   const [selected, setSelected] = useState<string | null>(null)
   const [revealed, setRevealed] = useState(false)
 
-  const solve = async () => {
-    if (loading) return
+  // AI conversation state
+  const [messages, setMessages] = useState<{ role: 'ai' | 'user'; text: string }[]>([])
+  const [streaming, setStreaming] = useState('')
+  const [isStreaming, setIsStreaming] = useState(false)
+  const [followUp, setFollowUp] = useState('')
+
+  const hasResponse = messages.length > 0
+
+  async function streamFrom(url: string, body: object) {
+    setIsStreaming(true)
+    setStreaming('')
     setOpen(true)
-    setLoading(true)
-    setAiText('')
 
     try {
-      const res = await fetch('/api/explain', {
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: q.content,
-          option_a: q.option_a,
-          option_b: q.option_b,
-          option_c: q.option_c,
-          option_d: q.option_d,
-          passage: q.passage,
-        }),
+        body: JSON.stringify(body),
       })
-
       if (!res.body) throw new Error('No stream')
       const reader = res.body.getReader()
       const decoder = new TextDecoder()
-
+      let text = ''
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
-        setAiText(prev => prev + decoder.decode(value, { stream: true }))
+        text += decoder.decode(value, { stream: true })
+        setStreaming(text)
       }
+      setMessages(prev => [...prev, { role: 'ai', text }])
     } catch {
-      setAiText('Có lỗi xảy ra, thử lại nhé.')
+      setMessages(prev => [...prev, { role: 'ai', text: 'Có lỗi xảy ra, thử lại nhé.' }])
     } finally {
-      setLoading(false)
+      setStreaming('')
+      setIsStreaming(false)
     }
+  }
+
+  const solve = () => {
+    streamFrom('/api/explain', {
+      content: q.content,
+      option_a: q.option_a,
+      option_b: q.option_b,
+      option_c: q.option_c,
+      option_d: q.option_d,
+      passage: q.passage,
+      studentAnswer: selected || undefined,
+      correctAnswer: revealed ? q.answer : undefined,
+    })
+  }
+
+  const sendFollowUp = () => {
+    const text = followUp.trim()
+    if (!text || isStreaming) return
+    setFollowUp('')
+    setMessages(prev => [...prev, { role: 'user', text }])
+    const firstAiResponse = messages.find(m => m.role === 'ai')?.text ?? ''
+    streamFrom('/api/chat', {
+      question: {
+        content: q.content,
+        option_a: q.option_a,
+        option_b: q.option_b,
+        option_c: q.option_c,
+        option_d: q.option_d,
+        passage: q.passage,
+        correctAnswer: q.answer,
+        studentAnswer: selected || undefined,
+      },
+      priorExplanation: firstAiResponse,
+      followUpQuestion: text,
+    })
   }
 
   const optionKeys = { A: q.option_a, B: q.option_b, C: q.option_c, D: q.option_d }
@@ -69,7 +104,6 @@ export function QuestionCard({ q, index }: { q: Question; index: number }) {
       background: '#fff', border: '1px solid var(--border)',
       borderRadius: 14, overflow: 'hidden', boxShadow: 'var(--card-shadow)',
     }}>
-      {/* Question body */}
       <div style={{ padding: '20px 22px' }}>
         <div style={{ display: 'flex', gap: 10, alignItems: 'baseline', marginBottom: 12 }}>
           <span style={{
@@ -78,7 +112,6 @@ export function QuestionCard({ q, index }: { q: Question; index: number }) {
           }}>Câu {index + 1}</span>
         </div>
 
-        {/* Passage */}
         {q.passage && (
           <div style={{
             fontSize: 13, lineHeight: 1.7, color: 'var(--text)',
@@ -90,7 +123,6 @@ export function QuestionCard({ q, index }: { q: Question; index: number }) {
           </div>
         )}
 
-        {/* Image */}
         {q.image_url && (
           <div style={{ marginBottom: 14 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -98,12 +130,10 @@ export function QuestionCard({ q, index }: { q: Question; index: number }) {
           </div>
         )}
 
-        {/* Content */}
         <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--navy)', lineHeight: 1.6, marginBottom: 16 }}>
           {q.content}
         </p>
 
-        {/* Options */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
           {OPTIONS.map(letter => {
             const isSelected = selected === letter
@@ -135,7 +165,6 @@ export function QuestionCard({ q, index }: { q: Question; index: number }) {
           })}
         </div>
 
-        {/* Action row */}
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           {!revealed && (
             <button onClick={() => setRevealed(true)} style={{
@@ -149,37 +178,102 @@ export function QuestionCard({ q, index }: { q: Question; index: number }) {
             </button>
           )}
 
-          <button onClick={aiText ? () => setOpen(o => !o) : solve} style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600,
-            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-            color: '#fff', border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
-            fontFamily: 'inherit', opacity: loading ? 0.8 : 1,
-          }}>
-            {loading
+          <button
+            onClick={hasResponse ? () => setOpen(o => !o) : solve}
+            disabled={isStreaming && !hasResponse}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600,
+              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+              color: '#fff', border: 'none',
+              cursor: isStreaming && !hasResponse ? 'not-allowed' : 'pointer',
+              fontFamily: 'inherit', opacity: isStreaming && !hasResponse ? 0.8 : 1,
+            }}
+          >
+            {isStreaming && !hasResponse
               ? <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> Đang giải...</>
-              : aiText
+              : hasResponse
               ? <>{open ? <ChevronUp size={14} /> : <ChevronDown size={14} />} AI giải</>
               : <><Sparkles size={14} /> AI giải</>}
           </button>
         </div>
       </div>
 
-      {/* AI answer panel */}
-      {open && (aiText || loading) && (
+      {/* AI panel */}
+      {open && (hasResponse || isStreaming) && (
         <div style={{
           borderTop: '1px solid var(--border)',
           background: 'linear-gradient(to bottom, #faf5ff, #f5f3ff)',
           padding: '18px 22px',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 12 }}>
             <Sparkles size={14} color="#7c3aed" />
             <span style={{ fontSize: 12, fontWeight: 700, color: '#7c3aed' }}>AI giải (học sinh điểm cao ĐGNL)</span>
           </div>
-          <p style={{ fontSize: 14, color: '#1e1b4b', lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
-            {aiText}
-            {loading && <span style={{ display: 'inline-block', width: 8, height: 14, background: '#7c3aed', marginLeft: 2, animation: 'blink 1s infinite', borderRadius: 1 }} />}
-          </p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {messages.map((msg, i) =>
+              msg.role === 'ai' ? (
+                <p key={i} style={{ fontSize: 14, color: '#1e1b4b', lineHeight: 1.8, whiteSpace: 'pre-wrap', margin: 0 }}>
+                  {msg.text}
+                </p>
+              ) : (
+                <div key={i} style={{
+                  alignSelf: 'flex-end', maxWidth: '80%',
+                  background: '#ede9fe', border: '1px solid #ddd5fe',
+                  borderRadius: '12px 12px 2px 12px', padding: '8px 12px',
+                  fontSize: 13, color: '#4c1d95',
+                }}>
+                  {msg.text}
+                </div>
+              )
+            )}
+
+            {isStreaming && (
+              <p style={{ fontSize: 14, color: '#1e1b4b', lineHeight: 1.8, whiteSpace: 'pre-wrap', margin: 0 }}>
+                {streaming}
+                <span style={{
+                  display: 'inline-block', width: 8, height: 14,
+                  background: '#7c3aed', marginLeft: 2,
+                  animation: 'blink 1s infinite', borderRadius: 1,
+                  verticalAlign: 'text-bottom',
+                }} />
+              </p>
+            )}
+          </div>
+
+          {/* Follow-up input */}
+          {hasResponse && !isStreaming && (
+            <div style={{
+              display: 'flex', gap: 8, marginTop: 14,
+              borderTop: '1px solid #ddd5fe', paddingTop: 14,
+            }}>
+              <input
+                value={followUp}
+                onChange={e => setFollowUp(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendFollowUp() } }}
+                placeholder="Hỏi tiếp về câu này..."
+                style={{
+                  flex: 1, padding: '8px 12px', borderRadius: 8,
+                  border: '1.5px solid #ddd5fe', fontSize: 13,
+                  fontFamily: 'inherit', outline: 'none',
+                  background: '#fff', color: '#1e1b4b',
+                }}
+              />
+              <button
+                onClick={sendFollowUp}
+                disabled={!followUp.trim()}
+                style={{
+                  width: 36, height: 36, borderRadius: 8, border: 'none', flexShrink: 0,
+                  background: followUp.trim() ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : '#e5e7eb',
+                  color: '#fff', cursor: followUp.trim() ? 'pointer' : 'default',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                <Send size={14} />
+              </button>
+            </div>
+          )}
         </div>
       )}
 
