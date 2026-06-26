@@ -77,6 +77,31 @@ ALTER TABLE questions ADD COLUMN IF NOT EXISTS image_description TEXT;
 -- Image URL for questions with figures
 ALTER TABLE questions ADD COLUMN IF NOT EXISTS image_url TEXT;
 
+-- Student test submissions
+CREATE TABLE IF NOT EXISTS test_submissions (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  test_id    UUID NOT NULL REFERENCES tests(id) ON DELETE CASCADE,
+  user_id    UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  answers    JSONB NOT NULL DEFAULT '{}',  -- { question_id: 'A'|'B'|'C'|'D' }
+  score      INT NOT NULL DEFAULT 0,       -- number of correct answers
+  total      INT NOT NULL DEFAULT 0,       -- total questions
+  breakdown  JSONB NOT NULL DEFAULT '{}',  -- { part: { correct, total } }
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE test_submissions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "users_read_own_submissions" ON test_submissions
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "users_insert_own_submissions" ON test_submissions
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "admins_all_submissions" ON test_submissions
+  FOR ALL USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  );
+
 -- Storage bucket (run in Supabase dashboard > Storage, or via SQL):
 -- INSERT INTO storage.buckets (id, name, public) VALUES ('question-images', 'question-images', true);
 -- CREATE POLICY "Public read question images" ON storage.objects FOR SELECT USING (bucket_id = 'question-images');
