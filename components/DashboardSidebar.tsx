@@ -3,7 +3,6 @@
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard,
-  BookOpen,
   Target,
   TrendingUp,
   ClipboardList,
@@ -18,12 +17,11 @@ type Props = {
 }
 
 const navItems = [
-  { href: '/dashboard',          icon: LayoutDashboard, label: 'Tổng quan' },
-  { href: '/dashboard/courses',  icon: BookOpen,        label: 'Khóa học' },
-  { href: '/dashboard/practice', icon: Target,          label: 'Luyện tập' },
-  { href: '/dashboard/progress', icon: TrendingUp,      label: 'Tiến độ' },
-  { href: '/dashboard/exams',    icon: ClipboardList,   label: 'Đề thi thử' },
-  { href: '/dashboard/ai-tutor', icon: BrainCircuit,    label: 'AI Gia sư' },
+  { href: '/dashboard',          icon: LayoutDashboard, label: 'Tổng quan',   exact: true },
+  { href: '/dashboard/ai-tutor', icon: BrainCircuit,    label: 'AI Gia sư',   exact: false },
+  { href: '/dashboard/practice', icon: Target,          label: 'Luyện tập',   exact: false },
+  { href: '/dashboard/exams',    icon: ClipboardList,   label: 'Đề thi thử',  exact: false },
+  { href: '/dashboard/progress', icon: TrendingUp,      label: 'Tiến độ',     exact: false },
 ]
 
 export function DashboardSidebar({ userName, onLogout }: Props) {
@@ -60,8 +58,8 @@ export function DashboardSidebar({ userName, onLogout }: Props) {
 
       {/* Nav */}
       <nav style={{ flex: 1, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto' }}>
-        {navItems.map(({ href, icon: Icon, label }) => {
-          const isActive = pathname === href
+        {navItems.map(({ href, icon: Icon, label, exact }) => {
+          const isActive = exact ? pathname === href : pathname === href || pathname.startsWith(href + '/')
           return (
             <a
               key={href}
