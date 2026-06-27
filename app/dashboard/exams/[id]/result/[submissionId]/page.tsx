@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { Trophy, RotateCcw } from 'lucide-react'
+import { ResultQuestionCard } from '../ResultQuestionCard'
 
 type Params = Promise<{ id: string; submissionId: string }>
 
@@ -55,8 +56,6 @@ export default async function ResultPage({ params }: { params: Params }) {
     option_a: string; option_b: string; option_c: string; option_d: string
     answer: string; part: string; module: string; order_num: number
   }>
-
-  const OPTION_MAP: Record<string, string> = { A: 'option_a', B: 'option_b', C: 'option_c', D: 'option_d' }
 
   return (
     <div style={{ padding: '32px', maxWidth: 800, margin: '0 auto' }}>
@@ -157,87 +156,17 @@ export default async function ResultPage({ params }: { params: Params }) {
           const studentAnswer = answers[q.id] ?? null
           const isCorrect = studentAnswer === q.answer
           const meta = PART_META[q.part]
-
           return (
-            <div key={q.id} style={{
-              background: '#fff', border: `1.5px solid ${isCorrect ? '#bbf7d0' : '#fecaca'}`,
-              borderRadius: 12, overflow: 'hidden',
-            }}>
-              {/* Header strip */}
-              <div style={{
-                background: isCorrect ? '#f0fdf4' : '#fef2f2',
-                padding: '10px 16px',
-                display: 'flex', alignItems: 'center', gap: 10,
-              }}>
-                <span style={{
-                  fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 999,
-                  background: isCorrect ? '#16a34a' : '#dc2626', color: '#fff',
-                }}>
-                  Câu {i + 1}
-                </span>
-                <span style={{ fontSize: 11, color: meta?.color ?? 'var(--text-muted)', fontWeight: 600 }}>
-                  {meta?.label}
-                </span>
-                <span style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 700, color: isCorrect ? '#16a34a' : '#dc2626' }}>
-                  {isCorrect ? '✓ Đúng' : `✗ Sai — Đáp án: ${q.answer}`}
-                </span>
-                {!isCorrect && studentAnswer && (
-                  <span style={{ fontSize: 12, color: '#dc2626' }}>Bạn chọn: {studentAnswer}</span>
-                )}
-                {!isCorrect && !studentAnswer && (
-                  <span style={{ fontSize: 12, color: '#d97706' }}>Bỏ trống</span>
-                )}
-              </div>
-
-              {/* Question content */}
-              <div style={{ padding: '14px 16px' }}>
-                {q.passage && (
-                  <div style={{
-                    fontSize: 12, lineHeight: 1.7, color: 'var(--text)',
-                    background: '#f8faff', border: '1px solid #dbeafe',
-                    borderLeft: '3px solid var(--blue)',
-                    borderRadius: 6, padding: '10px 12px', marginBottom: 10, whiteSpace: 'pre-wrap',
-                  }}>
-                    {q.passage}
-                  </div>
-                )}
-                {q.image_url && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={q.image_url} alt="" style={{ maxWidth: '100%', borderRadius: 6, marginBottom: 10 }} />
-                )}
-                <p style={{ fontSize: 14, color: 'var(--navy)', fontWeight: 500, marginBottom: 10, lineHeight: 1.5 }}>
-                  {q.content}
-                </p>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-                  {(['A', 'B', 'C', 'D'] as const).map(letter => {
-                    const isRight = letter === q.answer
-                    const isPicked = letter === studentAnswer
-                    return (
-                      <div key={letter} style={{
-                        display: 'flex', gap: 7, alignItems: 'flex-start',
-                        padding: '7px 10px', borderRadius: 7, fontSize: 13,
-                        background: isRight ? '#f0fdf4' : isPicked ? '#fef2f2' : 'transparent',
-                        border: `1px solid ${isRight ? '#86efac' : isPicked ? '#fca5a5' : 'transparent'}`,
-                      }}>
-                        <span style={{
-                          fontSize: 11, fontWeight: 700, flexShrink: 0,
-                          width: 20, height: 20, borderRadius: 4,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          background: isRight ? '#16a34a' : isPicked ? '#dc2626' : '#e5e7eb',
-                          color: (isRight || isPicked) ? '#fff' : '#6b7280',
-                        }}>
-                          {letter}
-                        </span>
-                        <span style={{ color: isRight ? '#15803d' : isPicked ? '#dc2626' : 'var(--text)', lineHeight: 1.4 }}>
-                          {q[OPTION_MAP[letter] as keyof typeof q] as string}
-                        </span>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            </div>
+            <ResultQuestionCard
+              key={q.id}
+              q={q}
+              index={i}
+              studentAnswer={studentAnswer}
+              isCorrect={isCorrect}
+              partColor={meta?.color ?? 'var(--text-muted)'}
+              partBg={meta?.bg ?? '#f3f4f6'}
+              partLabel={meta?.label ?? q.part}
+            />
           )
         })}
       </div>
