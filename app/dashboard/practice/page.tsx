@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
-import { PARTS } from '@/lib/exam/parts'
 import { QuestionCard } from './QuestionCard'
+import { PracticeFilters } from './PracticeFilters'
 
 type SearchParams = Promise<{ part?: string; module?: string; page?: string }>
 
@@ -23,8 +23,6 @@ export default async function PracticePage({ searchParams }: { searchParams: Sea
 
   const { data: questions, count } = await query
   const totalPages = Math.ceil((count ?? 0) / pageSize)
-  const partKeys = Object.keys(PARTS)
-
   return (
     <div style={{ padding: '32px', maxWidth: 800, margin: '0 auto' }}>
 
@@ -36,31 +34,7 @@ export default async function PracticePage({ searchParams }: { searchParams: Sea
         </p>
       </div>
 
-      {/* Filters */}
-      <form method="GET" style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 24 }}>
-        <select name="part" defaultValue={part ?? ''} className="form-input" style={{ fontSize: 13, minWidth: 160 }}>
-          <option value="">Tất cả môn</option>
-          {partKeys.map(k => (
-            <option key={k} value={k}>{PARTS[k as keyof typeof PARTS].label}</option>
-          ))}
-        </select>
-
-        {part && PARTS[part as keyof typeof PARTS] && (
-          <select name="module" defaultValue={module ?? ''} className="form-input" style={{ fontSize: 13, minWidth: 180 }}>
-            <option value="">Tất cả chủ đề</option>
-            {Object.entries(PARTS[part as keyof typeof PARTS].modules).map(([k, label]) => (
-              <option key={k} value={k}>{label}</option>
-            ))}
-          </select>
-        )}
-
-        <button type="submit" className="btn-primary" style={{ padding: '9px 20px', fontSize: 13, border: 'none', borderRadius: 8 }}>
-          Lọc
-        </button>
-        {(part || module) && (
-          <a href="/dashboard/practice" style={{ fontSize: 13, color: 'var(--text-muted)', alignSelf: 'center' }}>Xóa lọc</a>
-        )}
-      </form>
+      <PracticeFilters part={part} module={module} />
 
       {/* Questions */}
       {!questions?.length ? (
