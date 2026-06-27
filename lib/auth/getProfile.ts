@@ -5,9 +5,9 @@ export type Profile = {
   full_name: string | null
   school: string | null
   role: string
-  target_score: number
+  target_score: number | null
   created_at: string
-  updated_at: string
+  updated_at: string | null
 }
 
 export async function getProfile(userId: string): Promise<Profile | null> {

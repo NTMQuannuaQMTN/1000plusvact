@@ -4,19 +4,25 @@ import { Users, BarChart2, BookOpen, FileText, PlusCircle, Download, ChevronRigh
 export default async function AdminPage() {
   const supabase = await createClient()
 
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+
   const [
     { count: questionCount },
     { count: testCount },
+    { count: studentCount },
+    { count: weeklyActivity },
   ] = await Promise.all([
     supabase.from('questions').select('*', { count: 'exact', head: true }),
     supabase.from('tests').select('*', { count: 'exact', head: true }),
+    supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'student'),
+    supabase.from('test_submissions').select('*', { count: 'exact', head: true }).gte('created_at', weekAgo),
   ])
 
   const stats = [
-    { icon: BookOpen,  value: String(questionCount ?? 0), label: 'Câu hỏi trong CSDL', color: 'var(--navy)' },
-    { icon: FileText,  value: String(testCount ?? 0),     label: 'Đề thi',             color: '#d97706'     },
-    { icon: Users,     value: '—',                        label: 'Tổng học sinh',      color: 'var(--blue)' },
-    { icon: BarChart2, value: '—',                        label: 'Hoạt động tuần này', color: '#16a34a'     },
+    { icon: BookOpen,  value: String(questionCount ?? 0),  label: 'Câu hỏi trong CSDL', color: 'var(--navy)', href: '/admin/questions' },
+    { icon: FileText,  value: String(testCount ?? 0),      label: 'Đề thi',              color: '#d97706',     href: '/admin/tests'     },
+    { icon: Users,     value: String(studentCount ?? 0),   label: 'Tổng học sinh',       color: 'var(--blue)', href: '/admin/students'  },
+    { icon: BarChart2, value: String(weeklyActivity ?? 0), label: 'Lượt làm bài tuần này', color: '#16a34a',   href: '/admin/stats'     },
   ]
 
   const quickActions = [
@@ -40,16 +46,16 @@ export default async function AdminPage() {
 
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
-        {stats.map(({ icon: Icon, value, label, color }) => (
-          <div key={label} style={{
+        {stats.map(({ icon: Icon, value, label, color, href }) => (
+          <a key={label} href={href} style={{
             background: '#fff', border: '1px solid var(--border)',
             borderRadius: 12, padding: '18px 20px',
-            boxShadow: 'var(--card-shadow)',
+            boxShadow: 'var(--card-shadow)', textDecoration: 'none', display: 'block',
           }}>
             <Icon size={20} color={color} style={{ marginBottom: 10 }} />
             <p style={{ fontSize: 24, fontWeight: 800, color, marginBottom: 2 }}>{value}</p>
             <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>{label}</p>
-          </div>
+          </a>
         ))}
       </div>
 
