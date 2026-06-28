@@ -8,7 +8,7 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "VACT – AI Exam Preparation",
+  title: "1000plusVACT – AI Exam Preparation",
   description: "AI-powered Vietnamese university entrance exam preparation platform.",
 };
 
