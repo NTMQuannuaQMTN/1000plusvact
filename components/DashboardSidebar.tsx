@@ -52,7 +52,7 @@ export function DashboardSidebar({ userName, onLogout }: Props) {
             fontWeight: 900,
             lineHeight: 1.4,
           }}>V</span>
-          <span style={{ color: 'var(--navy)', fontWeight: 800, fontSize: 19, letterSpacing: '-0.3px' }}>VACT</span>
+          <span style={{ color: 'var(--navy)', fontWeight: 800, fontSize: 15, letterSpacing: '-0.3px' }}>1000plus VACT</span>
         </a>
       </div>
 

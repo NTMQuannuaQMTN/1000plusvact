@@ -16,7 +16,7 @@ export default async function LoginPage({ searchParams }: Props) {
     }}>
       <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 32, textDecoration: 'none' }}>
         <span style={{ background: 'var(--navy)', color: '#fff', borderRadius: 6, padding: '2px 8px', fontSize: 20, fontWeight: 900 }}>V</span>
-        <span style={{ color: 'var(--navy)', fontWeight: 800, fontSize: 22 }}>VACT</span>
+        <span style={{ color: 'var(--navy)', fontWeight: 800, fontSize: 17 }}>1000plus VACT</span>
       </a>
 
       <div className="auth-card">
@@ -80,7 +80,7 @@ export default async function LoginPage({ searchParams }: Props) {
         </p>
       </div>
 
-      <p style={{ marginTop: 24, color: 'var(--text-muted)', fontSize: 12 }}>© 2026 VACT · Luyện thi AI</p>
+      <p style={{ marginTop: 24, color: 'var(--text-muted)', fontSize: 12 }}>© 2026 1000plus VACT · Luyện thi AI</p>
     </div>
   )
 }

@@ -43,7 +43,7 @@ export default async function LandingPage() {
             Điểm cao hơn.
           </h1>
           <p style={{ fontSize: 18, color: 'var(--text-muted)', lineHeight: 1.7, marginBottom: 36, maxWidth: 460 }}>
-            VACT giúp học sinh Việt Nam luyện thi ĐGNL với bài tập AI cá nhân hóa,
+            1000plus VACT giúp học sinh Việt Nam luyện thi ĐGNL với bài tập AI cá nhân hóa,
             phân tích chi tiết và lộ trình học thích ứng.
           </p>
           <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
@@ -142,7 +142,7 @@ export default async function LandingPage() {
             Quy trình đơn giản
           </p>
           <h2 style={{ fontSize: 32, fontWeight: 800, color: 'var(--navy)', marginBottom: 48 }}>
-            VACT hoạt động như thế nào?
+            1000plus VACT hoạt động như thế nào?
           </h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 32 }}>
             {[
@@ -177,7 +177,7 @@ export default async function LandingPage() {
           Sẵn sàng chinh phục kỳ thi?
         </h2>
         <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 17, marginBottom: 36, maxWidth: 480, margin: '0 auto 36px' }}>
-          Hàng nghìn học sinh đang luyện thi cùng VACT. Hoàn toàn miễn phí để bắt đầu.
+          Hàng nghìn học sinh đang luyện thi cùng 1000plus VACT. Hoàn toàn miễn phí để bắt đầu.
         </p>
         <a href="/signup" className="btn-primary" style={{ fontSize: 16, padding: '14px 40px' }}>
           Bắt đầu ngay hôm nay
@@ -191,7 +191,7 @@ export default async function LandingPage() {
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                 <span style={{ background: 'var(--blue)', color: '#fff', borderRadius: 6, padding: '2px 8px', fontSize: 18, fontWeight: 900 }}>V</span>
-                <span style={{ color: '#fff', fontWeight: 800, fontSize: 18 }}>VACT</span>
+                <span style={{ color: '#fff', fontWeight: 800, fontSize: 16 }}>1000plus VACT</span>
               </div>
               <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 13, lineHeight: 1.6 }}>
                 Nền tảng luyện thi AI dành cho học sinh Việt Nam.
@@ -220,7 +220,7 @@ export default async function LandingPage() {
             display: 'flex', justifyContent: 'space-between',
             alignItems: 'center', flexWrap: 'wrap', gap: 12,
           }}>
-            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: 13 }}>© 2026 VACT. Bảo lưu mọi quyền.</p>
+            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: 13 }}>© 2026 1000plus VACT. Bảo lưu mọi quyền.</p>
             <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: 13 }}>Luyện thi ĐGNL & THPTQG thông minh hơn.</p>
           </div>
         </div>

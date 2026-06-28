@@ -16,13 +16,13 @@ export default async function SignupPage({ searchParams }: Props) {
     }}>
       <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 32, textDecoration: 'none' }}>
         <span style={{ background: 'var(--navy)', color: '#fff', borderRadius: 6, padding: '2px 8px', fontSize: 20, fontWeight: 900 }}>V</span>
-        <span style={{ color: 'var(--navy)', fontWeight: 800, fontSize: 22 }}>VACT</span>
+        <span style={{ color: 'var(--navy)', fontWeight: 800, fontSize: 17 }}>1000plus VACT</span>
       </a>
 
       <div className="auth-card">
         <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--navy)', marginBottom: 4 }}>Tạo tài khoản</h1>
         <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 28 }}>
-          Tham gia cùng hàng nghìn học sinh đang luyện thi với VACT
+          Tham gia cùng hàng nghìn học sinh đang luyện thi với 1000plus VACT
         </p>
 
         {error && (
@@ -91,7 +91,7 @@ export default async function SignupPage({ searchParams }: Props) {
         </form>
 
         <p style={{ textAlign: 'center', marginTop: 24, color: 'var(--text-muted)', fontSize: 13, lineHeight: 1.6 }}>
-          Khi đăng ký, bạn đồng ý với Điều khoản dịch vụ của VACT.
+          Khi đăng ký, bạn đồng ý với Điều khoản dịch vụ của 1000plus VACT.
         </p>
         <p style={{ textAlign: 'center', marginTop: 12, color: 'var(--text-muted)', fontSize: 14 }}>
           Đã có tài khoản?{' '}
@@ -99,7 +99,7 @@ export default async function SignupPage({ searchParams }: Props) {
         </p>
       </div>
 
-      <p style={{ marginTop: 24, color: 'var(--text-muted)', fontSize: 12 }}>© 2026 VACT · Luyện thi AI</p>
+      <p style={{ marginTop: 24, color: 'var(--text-muted)', fontSize: 12 }}>© 2026 1000plus VACT · Luyện thi AI</p>
     </div>
   )
 }

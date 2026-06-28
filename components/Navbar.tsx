@@ -37,7 +37,7 @@ export function Navbar({ variant = 'landing', userName, userRole }: NavbarProps)
           fontSize: 18,
           fontWeight: 900,
         }}>V</span>
-        VACT
+        <span style={{ fontWeight: 800, fontSize: 16 }}>1000plus VACT</span>
       </a>
 
       <div style={{ display: 'flex', gap: 4, flex: 1 }}>

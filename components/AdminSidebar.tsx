@@ -51,7 +51,7 @@ export function AdminSidebar({ userName, userEmail, onLogout }: Props) {
             fontWeight: 900,
             lineHeight: 1.4,
           }}>V</span>
-          <span style={{ color: 'var(--navy)', fontWeight: 800, fontSize: 19, letterSpacing: '-0.3px' }}>VACT</span>
+          <span style={{ color: 'var(--navy)', fontWeight: 800, fontSize: 15, letterSpacing: '-0.3px' }}>1000plus VACT</span>
           <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, marginLeft: 2 }}>Admin</span>
         </a>
       </div>
