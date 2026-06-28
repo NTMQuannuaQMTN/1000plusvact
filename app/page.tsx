@@ -79,7 +79,7 @@ export default async function LandingPage() {
       </section>
 
       {/* ── Stats ── */}
-      <section style={{ background: 'var(--navy)', padding: '48px 32px' }}>
+      {/* <section style={{ background: 'var(--navy)', padding: '48px 32px' }}>
         <div style={{
           maxWidth: 860, margin: '0 auto',
           display: 'grid',
@@ -97,7 +97,7 @@ export default async function LandingPage() {
             </div>
           ))}
         </div>
-      </section>
+      </section> */}
 
       {/* ── Subjects ── */}
       <section id="courses" style={{ background: 'var(--bg)', padding: '80px 32px' }}>
