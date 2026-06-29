@@ -66,16 +66,18 @@ export function TestClient({ test, questions }: Props) {
     })
   }
 
-  // Group consecutive questions by passage for display
-  const grouped: { passage: string | null; questions: (TestQuestion & { localIdx: number })[] }[] = []
-  questions.forEach((q, i) => {
-    const prev = grouped[grouped.length - 1]
-    if (prev && prev.passage === q.passage && q.passage) {
-      prev.questions.push({ ...q, localIdx: i })
-    } else {
-      grouped.push({ passage: q.passage ?? null, questions: [{ ...q, localIdx: i }] })
-    }
-  })
+  // Compute the question-range label for shared passages ("Câu 46–52")
+  const passageRange = new Map<string, string>()
+  let gi = 0
+  while (gi < questions.length) {
+    const q = questions[gi]
+    if (!q.passage) { gi++; continue }
+    let end = gi
+    while (end < questions.length && questions[end].passage === q.passage) end++
+    const label = end - gi > 1 ? `${gi + 1}–${end}` : `${gi + 1}`
+    for (let k = gi; k < end; k++) passageRange.set(questions[k].id, label)
+    gi = end
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
@@ -141,31 +143,14 @@ export function TestClient({ test, questions }: Props) {
       {/* Questions */}
       <div style={{ flex: 1, overflow: 'auto', padding: '24px' }}>
         <div style={{ maxWidth: 720, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 0 }}>
-          {grouped.map((group, gi) => (
-            <div key={gi}>
-              {/* Shared passage */}
-              {group.passage && (
-                <div style={{ marginTop: gi === 0 ? 0 : 24 }}>
-                  <PassageBlock
-                    text={group.passage}
-                    part={group.questions[0].part}
-                    questionRange={
-                      `${group.questions[0].localIdx + 1}` +
-                      (group.questions.length > 1 ? `–${group.questions[group.questions.length - 1].localIdx + 1}` : '')
-                    }
-                  />
-                </div>
-              )}
-
-              {/* Questions in this group */}
-              {group.questions.map(q => (
+          {questions.map((q, qi) => (
                 <div
                   key={q.id}
-                  ref={el => { questionRefs.current[q.localIdx] = el }}
+                  ref={el => { questionRefs.current[qi] = el }}
                   style={{
                     background: '#fff', border: '1px solid var(--border)',
                     borderRadius: 12, padding: '20px 22px',
-                    marginTop: 12,
+                    marginTop: qi === 0 ? 0 : 12,
                   }}
                 >
                   {/* Question header */}
@@ -175,12 +160,21 @@ export function TestClient({ test, questions }: Props) {
                       background: PART_COLORS[q.part] + '18',
                       color: PART_COLORS[q.part] ?? 'var(--navy)',
                     }}>
-                      Câu {q.localIdx + 1}
+                      Câu {qi + 1}
                     </span>
                     <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                       {PART_LABELS[q.part]}
                     </span>
                   </div>
+
+                  {/* Passage — shown per-question so it's always visible when navigating via answer map */}
+                  {q.passage && (
+                    <PassageBlock
+                      text={q.passage}
+                      part={q.part}
+                      questionRange={passageRange.get(q.id)}
+                    />
+                  )}
 
                   {/* Image */}
                   {q.image_url && (
@@ -244,8 +238,6 @@ export function TestClient({ test, questions }: Props) {
                     })}
                   </div>
                 </div>
-              ))}
-            </div>
           ))}
 
           {/* Bottom submit */}
