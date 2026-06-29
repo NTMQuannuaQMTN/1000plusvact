@@ -2,15 +2,19 @@
 
 import { useState } from 'react'
 import { Sparkles, Loader2, ChevronDown, ChevronUp, Send } from 'lucide-react'
+import { PassageBlock } from '@/components/PassageBlock'
+import { getTaskHint } from '@/lib/exam/parts'
 
 type Q = {
   id: string
   content: string
   passage: string | null
   image_url: string | null
+  image_description: string | null
   option_a: string; option_b: string; option_c: string; option_d: string
   answer: string
   part: string
+  module: string
 }
 
 type Props = {
@@ -67,6 +71,7 @@ export function ResultQuestionCard({ q, index, studentAnswer, isCorrect, partCol
     content: q.content,
     option_a: q.option_a, option_b: q.option_b, option_c: q.option_c, option_d: q.option_d,
     passage: q.passage,
+    imageDescription: q.image_url ? undefined : (q.image_description || undefined),
     studentAnswer: studentAnswer ?? undefined,
     correctAnswer: q.answer,
   })
@@ -119,20 +124,19 @@ export function ResultQuestionCard({ q, index, studentAnswer, isCorrect, partCol
 
       {/* Content */}
       <div style={{ padding: '14px 16px' }}>
-        {q.passage && (
-          <div style={{
-            fontSize: 12, lineHeight: 1.7, color: 'var(--text)',
-            background: '#f8faff', border: '1px solid #dbeafe',
-            borderLeft: '3px solid var(--blue)',
-            borderRadius: 6, padding: '10px 12px', marginBottom: 10, whiteSpace: 'pre-wrap',
-          }}>
-            {q.passage}
-          </div>
-        )}
+        {q.passage && <PassageBlock text={q.passage} part={q.part} />}
         {q.image_url && (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={q.image_url} alt="" style={{ maxWidth: '100%', borderRadius: 6, marginBottom: 10 }} />
         )}
+        {(() => {
+          const hint = getTaskHint(q.part, q.module, q.content)
+          return hint ? (
+            <p style={{ fontSize: 11, color: '#16a34a', fontWeight: 600, fontStyle: 'italic', marginBottom: 6 }}>
+              {hint}
+            </p>
+          ) : null
+        })()}
         <p style={{ fontSize: 14, color: 'var(--navy)', fontWeight: 500, marginBottom: 10, lineHeight: 1.5 }}>
           {q.content}
         </p>

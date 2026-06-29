@@ -2,12 +2,15 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { CheckCircle2, XCircle, ChevronRight, RotateCcw, Sparkles, Loader2, Send, ArrowLeft } from 'lucide-react'
+import { PassageBlock } from '@/components/PassageBlock'
+import { getTaskHint } from '@/lib/exam/parts'
 
 type Question = {
   id: string
   content: string
   passage: string | null
   image_url: string | null
+  image_description: string | null
   option_a: string
   option_b: string
   option_c: string
@@ -90,6 +93,7 @@ export function TutorSession({ questions, partLabel, moduleLabel, part }: Props)
         option_a: q.option_a, option_b: q.option_b,
         option_c: q.option_c, option_d: q.option_d,
         passage: q.passage,
+        imageDescription: q.image_url ? undefined : (q.image_description || undefined),
         studentAnswer: selected,
         correctAnswer: q.answer,
       },
@@ -276,16 +280,7 @@ export function TutorSession({ questions, partLabel, moduleLabel, part }: Props)
       <div style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden', boxShadow: 'var(--card-shadow)' }}>
         <div style={{ padding: '24px' }}>
 
-          {q.passage && (
-            <div style={{
-              fontSize: 13, lineHeight: 1.75, color: 'var(--text)',
-              background: '#f8faff', border: '1px solid var(--border)',
-              borderLeft: `3px solid ${style.color}`,
-              borderRadius: 6, padding: '12px 16px', marginBottom: 18, whiteSpace: 'pre-wrap',
-            }}>
-              {q.passage}
-            </div>
-          )}
+          {q.passage && <PassageBlock text={q.passage} part={q.part} />}
 
           {q.image_url && (
             <div style={{ marginBottom: 18 }}>
@@ -293,6 +288,23 @@ export function TutorSession({ questions, partLabel, moduleLabel, part }: Props)
               <img src={q.image_url} alt="" style={{ maxWidth: '100%', borderRadius: 8, border: '1px solid var(--border)' }} />
             </div>
           )}
+          {!q.image_url && q.image_description && q.image_description.length > 20 && (
+            <div style={{
+              fontSize: 12, color: '#92400e', background: '#fef3c7',
+              border: '1px solid #fde68a', borderRadius: 6, padding: '8px 12px', marginBottom: 16,
+            }}>
+              📷 {q.image_description}
+            </div>
+          )}
+
+          {(() => {
+            const hint = getTaskHint(q.part, q.module, q.content)
+            return hint ? (
+              <p style={{ fontSize: 12, color: '#16a34a', fontWeight: 600, fontStyle: 'italic', marginBottom: 10 }}>
+                {hint}
+              </p>
+            ) : null
+          })()}
 
           <p style={{ fontSize: 16, fontWeight: 600, color: 'var(--navy)', lineHeight: 1.7, marginBottom: 20 }}>
             {q.content}

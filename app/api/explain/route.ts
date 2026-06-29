@@ -2,11 +2,12 @@ import { NextRequest } from 'next/server'
 import { GoogleGenAI } from '@google/genai'
 
 export async function POST(request: NextRequest) {
-  const { content, option_a, option_b, option_c, option_d, passage, studentAnswer, correctAnswer } =
+  const { content, option_a, option_b, option_c, option_d, passage, imageDescription, studentAnswer, correctAnswer } =
     await request.json() as {
       content: string
       option_a: string; option_b: string; option_c: string; option_d: string
       passage?: string | null
+      imageDescription?: string | null
       studentAnswer?: string | null
       correctAnswer?: string | null
     }
@@ -17,6 +18,7 @@ export async function POST(request: NextRequest) {
 
   const questionBlock = [
     passage ? `Ngữ liệu:\n${passage}\n` : null,
+    imageDescription ? `[Hình ảnh đi kèm: ${imageDescription}]` : null,
     `Câu hỏi: ${content}`,
     `A. ${option_a}`,
     `B. ${option_b}`,

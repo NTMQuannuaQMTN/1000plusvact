@@ -2,12 +2,15 @@
 
 import { useState } from 'react'
 import { Sparkles, Loader2, ChevronDown, ChevronUp, Send } from 'lucide-react'
+import { PassageBlock } from '@/components/PassageBlock'
+import { getTaskHint } from '@/lib/exam/parts'
 
 type Question = {
   id: string
   content: string
   passage: string | null
   image_url: string | null
+  image_description: string | null
   option_a: string
   option_b: string
   option_c: string
@@ -70,6 +73,7 @@ export function QuestionCard({ q, index }: { q: Question; index: number }) {
       option_c: q.option_c,
       option_d: q.option_d,
       passage: q.passage,
+      imageDescription: q.image_description || undefined,
       studentAnswer: selected || undefined,
       correctAnswer: revealed ? q.answer : undefined,
     })
@@ -112,16 +116,7 @@ export function QuestionCard({ q, index }: { q: Question; index: number }) {
           }}>Câu {index + 1}</span>
         </div>
 
-        {q.passage && (
-          <div style={{
-            fontSize: 13, lineHeight: 1.7, color: 'var(--text)',
-            background: '#f8faff', border: '1px solid var(--border)',
-            borderLeft: '3px solid var(--blue)',
-            borderRadius: 6, padding: '12px 14px', marginBottom: 14, whiteSpace: 'pre-wrap',
-          }}>
-            {q.passage}
-          </div>
-        )}
+        {q.passage && <PassageBlock text={q.passage} part={q.part} />}
 
         {q.image_url && (
           <div style={{ marginBottom: 14 }}>
@@ -129,6 +124,23 @@ export function QuestionCard({ q, index }: { q: Question; index: number }) {
             <img src={q.image_url} alt="Hình ảnh câu hỏi" style={{ maxWidth: '100%', borderRadius: 8, border: '1px solid var(--border)' }} />
           </div>
         )}
+        {!q.image_url && q.image_description && q.image_description.length > 20 && (
+          <div style={{
+            fontSize: 12, color: '#92400e', background: '#fef3c7',
+            border: '1px solid #fde68a', borderRadius: 6, padding: '8px 12px', marginBottom: 14,
+          }}>
+            📷 {q.image_description}
+          </div>
+        )}
+
+        {(() => {
+          const hint = getTaskHint(q.part, q.module, q.content)
+          return hint ? (
+            <p style={{ fontSize: 12, color: '#16a34a', fontWeight: 600, fontStyle: 'italic', marginBottom: 8 }}>
+              {hint}
+            </p>
+          ) : null
+        })()}
 
         <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--navy)', lineHeight: 1.6, marginBottom: 16 }}>
           {q.content}

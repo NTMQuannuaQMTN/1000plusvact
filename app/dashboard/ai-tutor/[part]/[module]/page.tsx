@@ -15,7 +15,7 @@ export default async function TutorModulePage({ params }: { params: Params }) {
 
   const { data: questions } = await supabase
     .from('questions')
-    .select('id, content, passage, image_url, option_a, option_b, option_c, option_d, answer, part, module')
+    .select('id, content, passage, image_url, image_description, option_a, option_b, option_c, option_d, answer, part, module')
     .eq('part', part)
     .eq('module', module)
     .limit(10)

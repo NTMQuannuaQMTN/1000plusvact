@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, useTransition } from 'react'
 import { submitTest } from '../actions'
 import { Clock, CheckSquare } from 'lucide-react'
+import { PassageBlock } from '@/components/PassageBlock'
+import { getTaskHint } from '@/lib/exam/parts'
 
 export type TestQuestion = {
   id: string
@@ -143,19 +145,15 @@ export function TestClient({ test, questions }: Props) {
             <div key={gi}>
               {/* Shared passage */}
               {group.passage && (
-                <div style={{
-                  fontSize: 13, lineHeight: 1.8, color: 'var(--text)',
-                  background: '#f8faff', border: '1px solid #dbeafe',
-                  borderLeft: '3px solid var(--blue)',
-                  borderRadius: 8, padding: '14px 16px',
-                  marginBottom: 0, whiteSpace: 'pre-wrap',
-                  marginTop: gi === 0 ? 0 : 24,
-                }}>
-                  <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    Đọc đoạn văn sau và trả lời câu {group.questions[0].localIdx + 1}
-                    {group.questions.length > 1 ? `–${group.questions[group.questions.length - 1].localIdx + 1}` : ''}
-                  </p>
-                  {group.passage}
+                <div style={{ marginTop: gi === 0 ? 0 : 24 }}>
+                  <PassageBlock
+                    text={group.passage}
+                    part={group.questions[0].part}
+                    questionRange={
+                      `${group.questions[0].localIdx + 1}` +
+                      (group.questions.length > 1 ? `–${group.questions[group.questions.length - 1].localIdx + 1}` : '')
+                    }
+                  />
                 </div>
               )}
 
@@ -191,7 +189,7 @@ export function TestClient({ test, questions }: Props) {
                       <img src={q.image_url} alt="Hình ảnh câu hỏi" style={{ maxWidth: '100%', borderRadius: 8, border: '1px solid var(--border)' }} />
                     </div>
                   )}
-                  {!q.image_url && q.image_description && (
+                  {!q.image_url && q.image_description && q.image_description.length > 20 && (
                     <div style={{
                       fontSize: 12, color: '#92400e', background: '#fef3c7',
                       border: '1px solid #fde68a', borderRadius: 6, padding: '8px 12px', marginBottom: 12,
@@ -199,6 +197,16 @@ export function TestClient({ test, questions }: Props) {
                       📷 {q.image_description}
                     </div>
                   )}
+
+                  {/* Task hint for English */}
+                  {(() => {
+                    const hint = getTaskHint(q.part, q.module, q.content)
+                    return hint ? (
+                      <p style={{ fontSize: 12, color: '#16a34a', fontWeight: 600, fontStyle: 'italic', marginBottom: 8 }}>
+                        {hint}
+                      </p>
+                    ) : null
+                  })()}
 
                   {/* Content */}
                   <p style={{ fontSize: 15, color: 'var(--navy)', fontWeight: 500, lineHeight: 1.6, marginBottom: 14 }}>

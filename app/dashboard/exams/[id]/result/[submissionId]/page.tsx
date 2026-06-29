@@ -28,7 +28,7 @@ export default async function ResultPage({ params }: { params: Params }) {
     supabase.from('tests').select('id, title, year').eq('id', testId).single(),
     supabase
       .from('test_questions')
-      .select('order_num, questions!inner(id, content, option_a, option_b, option_c, option_d, answer, part, module, passage, image_url)')
+      .select('order_num, questions!inner(id, content, option_a, option_b, option_c, option_d, answer, part, module, passage, image_url, image_description)')
       .eq('test_id', testId)
       .order('order_num'),
   ])
@@ -52,7 +52,7 @@ export default async function ResultPage({ params }: { params: Params }) {
     ...(r.questions as unknown as Record<string, unknown>),
     order_num: r.order_num,
   })) as Array<{
-    id: string; content: string; passage: string | null; image_url: string | null
+    id: string; content: string; passage: string | null; image_url: string | null; image_description: string | null
     option_a: string; option_b: string; option_c: string; option_d: string
     answer: string; part: string; module: string; order_num: number
   }>

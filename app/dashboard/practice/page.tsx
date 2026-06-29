@@ -14,7 +14,7 @@ export default async function PracticePage({ searchParams }: { searchParams: Sea
 
   let query = supabase
     .from('questions')
-    .select('id, content, passage, image_url, option_a, option_b, option_c, option_d, answer, part, module', { count: 'exact' })
+    .select('id, content, passage, image_url, image_description, option_a, option_b, option_c, option_d, answer, part, module', { count: 'exact' })
     .order('created_at', { ascending: false })
     .range(offset, offset + pageSize - 1)
 
