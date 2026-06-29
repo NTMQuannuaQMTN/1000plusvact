@@ -29,20 +29,26 @@ type CompactResponse = {
 
 const SHARED_NOTES = `
 Lưu ý quan trọng:
-- HOÀN CHỈNH: trích xuất ĐẦY ĐỦ mọi câu hỏi, không bỏ sót. Sau khi xong, kiểm tra lại số thứ tự câu hỏi để chắc chắn không có câu nào bị bỏ qua.
-- Đoạn văn/ngữ liệu: lưu MỘT lần vào "passages"; TẤT CẢ câu hỏi thuộc nhóm đó (câu đầu, câu giữa, câu cuối) đều đặt "pi" = index đó. Ví dụ: "Dựa vào đoạn sau trả lời câu 5 đến câu 8" → câu 5, 6, 7, 8 đều có pi = index đoạn văn đó, KHÔNG để pi = null.
-- "q" chỉ chứa câu hỏi, không lặp lại đoạn văn/ngữ liệu.
+- CÂU HỎI HỢP LỆ: phải có số thứ tự ĐƠN (Câu X — một số, không phải khoảng) VÀ có đúng 4 đáp án A/B/C/D rõ ràng để chọn.
+- TUYỆT ĐỐI KHÔNG tạo question từ các loại text sau — đây là ngữ cảnh, KHÔNG phải câu hỏi:
+  (a) Tiêu đề phần/mục: "PHẦN 1. SỬ DỤNG NGÔN NGỮ", "PHẦN 2. TOÁN HỌC", "1.1. TIẾNG VIỆT", "3.1. Tư duy logic", v.v.
+  (b) Hướng dẫn cho nhóm câu: "Câu 31 đến 35: Choose a suitable word...", "Câu 36 đến 40: Each sentence has one error...", "Câu 41 đến 45: Which best restates...", "Câu 46 đến 52: Read the following passage...", "Câu 53 đến 60: Read the passage carefully.", v.v.
+  (c) Tiêu đề ngữ liệu nhóm: "Dựa vào thông tin/đoạn văn dưới đây để trả lời các câu từ X đến Y", v.v.
+- Hướng dẫn nhóm câu (dạng "Câu X đến Y: [instruction]"): lưu nội dung instruction (và đoạn văn đi kèm nếu có) gộp vào passages[] như một entry; đặt pi cho TẤT CẢ câu X..Y trỏ đến index đó.
+- Đoạn văn/ngữ liệu chia sẻ: lưu MỘT lần vào "passages"; TẤT CẢ câu thuộc nhóm đều đặt pi = index đó.
+- "q" chỉ chứa nội dung câu hỏi cụ thể, không lặp lại đoạn văn/ngữ liệu hay hướng dẫn nhóm.
 - Bảng số liệu / hình vẽ / đồ thị / sơ đồ: thêm nhãn ngắn vào "images" (VD: "[bảng]", "[hình vẽ]") và đặt "ii" = index đó. Nhiều câu dùng chung → tất cả cùng "ii". KHÔNG tái tạo bảng/hình thành text. Câu không có hình/bảng: "ii": null.
-- "ans": một trong "A","B","C","D"; đặt "" nếu không có.
-- Giữ nguyên toàn bộ nội dung, không tóm tắt.
-- Chỉ trả về JSON object, không có text nào khác.`
+- "ans": một trong "A","B","C","D"; đặt "" nếu không xác định được.
+- Giữ nguyên toàn bộ nội dung câu hỏi và đáp án, không tóm tắt.
+- Chỉ trả về JSON object, không có text nào khác.
+- KIỂM TRA CUỐI: đếm số phần tử trong mảng questions — phải khớp chính xác với số câu hỏi (Câu X đơn lẻ có A/B/C/D) có trong đề. Nếu sai, rà soát lại để loại bỏ các mục không phải câu hỏi.`
 
 const PART_DESCRIPTIONS = `
 Đề thi ĐGNL TPHCM gồm 4 phần:
-- "viet"     : Tiếng Việt — module: doc_hieu, ngu_phap, van_hoc, dien_dat
-- "anh"      : Tiếng Anh — module: reading, grammar, writing
+- "viet"     : Tiếng Việt — module: doc_hieu (đọc hiểu), ngu_phap (ngữ pháp/từ vựng), van_hoc (văn học/thơ ca), dien_dat (diễn đạt/viết)
+- "anh"      : Tiếng Anh — module: grammar (ngữ pháp, fill-in-blank, tìm lỗi sai), writing (đặt câu, paraphrase, nối câu), reading (đọc hiểu passage dài)
 - "toan"     : Toán học — module: dai_so, hinh_hoc, giai_tich, xac_suat
-- "khoa_hoc" : Tư duy khoa học — module: vat_ly, hoa_hoc, sinh_hoc, xa_hoi`
+- "khoa_hoc" : Tư duy khoa học — module: vat_ly, hoa_hoc, sinh_hoc, xa_hoi (logic/phân tích số liệu/xã hội)`
 
 function buildPrompt(mode: string, partLabel: string, moduleLabel: string): string {
   const schema = mode === 'full'
@@ -50,15 +56,15 @@ function buildPrompt(mode: string, partLabel: string, moduleLabel: string): stri
     : `{"passages":["đoạn văn 1","..."],"images":["[bảng]"],"questions":[{"pi":0,"ii":null,"q":"...","a":"...","b":"...","c":"...","d":"...","ans":"A"}]}`
 
   if (mode === 'full') {
-    return `Đây là đề thi ĐGNL TPHCM đầy đủ.
+    return `Đây là đề thi ĐGNL TPHCM đầy đủ gồm 120 câu hỏi (Câu 1 đến Câu 120). JSON output phải có đúng 120 questions.
 ${PART_DESCRIPTIONS}
 
-Trích xuất TẤT CẢ câu hỏi trắc nghiệm. Trả về JSON object theo đúng schema này:
+Trích xuất TẤT CẢ 120 câu hỏi trắc nghiệm. Trả về JSON object theo đúng schema này:
 
 ${schema}
 ${SHARED_NOTES}
 - part phải là một trong: "viet","anh","toan","khoa_hoc".
-- module phải là key tương ứng với part.`
+- module phải là key tương ứng với part (xem mô tả ở trên để phân loại đúng).`
   }
 
   return `Đây là tài liệu trắc nghiệm môn ${partLabel}, chủ đề ${moduleLabel}.

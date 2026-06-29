@@ -130,7 +130,7 @@ export function ResultQuestionCard({ q, index, studentAnswer, isCorrect, partCol
           <img src={q.image_url} alt="" style={{ maxWidth: '100%', borderRadius: 6, marginBottom: 10 }} />
         )}
         {(() => {
-          const hint = getTaskHint(q.part, q.module, q.content)
+          const hint = getTaskHint(q.part, q.module, q.content, q.passage)
           return hint ? (
             <p style={{ fontSize: 11, color: '#16a34a', fontWeight: 600, fontStyle: 'italic', marginBottom: 6 }}>
               {hint}

@@ -134,7 +134,7 @@ export function QuestionCard({ q, index }: { q: Question; index: number }) {
         )}
 
         {(() => {
-          const hint = getTaskHint(q.part, q.module, q.content)
+          const hint = getTaskHint(q.part, q.module, q.content, q.passage)
           return hint ? (
             <p style={{ fontSize: 12, color: '#16a34a', fontWeight: 600, fontStyle: 'italic', marginBottom: 8 }}>
               {hint}
