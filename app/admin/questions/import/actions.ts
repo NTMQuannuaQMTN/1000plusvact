@@ -186,6 +186,7 @@ export async function saveImportedQuestions(formData: FormData) {
       passage:           q.passage ?? null,
       image_url:         (q as ExtractedQuestion & { image_url?: string }).image_url ?? null,
       image_description: q.image_description ?? null,
+      image_group:       q.image_group ?? null,
       content:           q.content,
       option_a:          q.option_a,
       option_b:          q.option_b,

@@ -190,7 +190,10 @@ export default async function ProgressPage() {
 
   // Overall averages
   const avgByPart = PART_KEYS.map(part => {
-    const scores = submissions.map(s => partScore(s.bd, part)).filter(v => v > 0)
+    // Only include submissions where the test actually had questions for this part
+    const scores = submissions
+      .filter(s => (s.bd[part]?.total ?? 0) > 0)
+      .map(s => partScore(s.bd, part))
     const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0
     return { part, avg }
   })

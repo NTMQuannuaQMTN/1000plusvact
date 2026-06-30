@@ -11,7 +11,10 @@ export async function deleteQuestion(formData: FormData) {
   revalidatePath('/admin/questions')
 }
 
+const VALID_ANSWERS = new Set(['A', 'B', 'C', 'D'])
+
 export async function updateAnswer(id: string, answer: string) {
+  if (!VALID_ANSWERS.has(answer)) throw new Error('Invalid answer')
   const supabase = await createClient()
   await supabase.from('questions').update({ answer }).eq('id', id)
   revalidatePath('/admin/questions')
@@ -32,7 +35,7 @@ export async function saveQuestion(formData: FormData) {
     option_b:    (formData.get('option_b') as string).trim(),
     option_c:    (formData.get('option_c') as string).trim(),
     option_d:    (formData.get('option_d') as string).trim(),
-    answer:      formData.get('answer') as string,
+    answer:      VALID_ANSWERS.has(formData.get('answer') as string) ? formData.get('answer') as string : 'A',
     explanation: (formData.get('explanation') as string)?.trim() || null,
     difficulty:  formData.get('difficulty') as string,
     source:      (formData.get('source') as string)?.trim() || null,

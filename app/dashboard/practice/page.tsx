@@ -16,6 +16,7 @@ export default async function PracticePage({ searchParams }: { searchParams: Sea
     .from('questions')
     .select('id, content, passage, image_url, image_description, option_a, option_b, option_c, option_d, answer, part, module', { count: 'exact' })
     .order('created_at', { ascending: false })
+    .order('id', { ascending: true })
     .range(offset, offset + pageSize - 1)
 
   if (part) query = query.eq('part', part)

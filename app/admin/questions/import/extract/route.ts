@@ -81,20 +81,64 @@ function countPartialQuestions(text: string): number {
   return (text.match(/"q"\s*:/g) ?? []).length
 }
 
+const VALID_PARTS = new Set(['viet', 'anh', 'toan', 'khoa_hoc'])
+const VALID_MODULES: Record<string, Set<string>> = {
+  viet:      new Set(['doc_hieu', 'ngu_phap', 'van_hoc', 'dien_dat']),
+  anh:       new Set(['reading', 'grammar', 'writing']),
+  toan:      new Set(['dai_so', 'hinh_hoc', 'giai_tich', 'xac_suat']),
+  khoa_hoc:  new Set(['vat_ly', 'hoa_hoc', 'sinh_hoc', 'xa_hoi']),
+}
+const DEFAULT_MODULE: Record<string, string> = {
+  viet: 'doc_hieu', anh: 'grammar', toan: 'dai_so', khoa_hoc: 'xa_hoi',
+}
+const VALID_ANSWERS = new Set(['A', 'B', 'C', 'D'])
+
 function expandCompact(compact: CompactResponse, fixedPart?: string, fixedModule?: string) {
-  return compact.questions.map(q => ({
-    part:              q.part ?? fixedPart ?? '',
-    module:            q.module ?? fixedModule ?? '',
-    passage:           q.pi !== null && q.pi !== undefined ? (compact.passages[q.pi] ?? null) : null,
-    image_description: q.ii !== null && q.ii !== undefined ? (compact.images?.[q.ii] ?? '[hình ảnh]') : null,
-    image_group:       q.ii ?? null,
-    content:           q.q,
-    option_a:          q.a,
-    option_b:          q.b,
-    option_c:          q.c,
-    option_d:          q.d,
-    answer:            q.ans ?? '',
-  }))
+  // Normalise passages/images arrays defensively — AI sometimes returns objects keyed by string index
+  const passages: string[] = Array.isArray(compact.passages)
+    ? compact.passages
+    : Object.values(compact.passages ?? {})
+  const images: string[] = Array.isArray(compact.images)
+    ? compact.images
+    : Object.values(compact.images ?? {})
+
+  return compact.questions.map(q => {
+    // Coerce pi/ii to integer — AI sometimes returns string like "0"
+    const pi = q.pi != null ? parseInt(String(q.pi), 10) : NaN
+    const ii = q.ii != null ? parseInt(String(q.ii), 10) : NaN
+
+    const rawPassage = !isNaN(pi) ? (passages[pi] ?? null) : null
+    // Discard empty/whitespace-only passages so display checks work correctly
+    const passage = rawPassage?.trim() || null
+
+    const rawImg = !isNaN(ii) ? (images[ii] ?? null) : null
+    const image_description = rawImg?.trim() || null
+    const image_group = !isNaN(ii) ? ii : null
+
+    // Validate part — fall back to fixedPart
+    const rawPart = q.part ?? fixedPart ?? ''
+    const part = VALID_PARTS.has(rawPart) ? rawPart : (fixedPart ?? rawPart)
+
+    // Validate module — fall back to fixedModule or default for the part
+    const rawModule = q.module ?? fixedModule ?? ''
+    const module = (VALID_MODULES[part]?.has(rawModule) ? rawModule : null)
+      ?? fixedModule
+      ?? DEFAULT_MODULE[part]
+      ?? rawModule
+
+    // Validate answer — only store A/B/C/D
+    const answer = VALID_ANSWERS.has(q.ans?.toUpperCase() ?? '') ? q.ans!.toUpperCase() : ''
+
+    return {
+      part, module, passage, image_description, image_group,
+      content:  q.q,
+      option_a: q.a,
+      option_b: q.b,
+      option_c: q.c,
+      option_d: q.d,
+      answer,
+    }
+  })
 }
 
 // ─── Route ────────────────────────────────────────────────────────────────────
